@@ -10,6 +10,7 @@
     "start": "bun run dist/index.js"
   },
   "dependencies": {
+    "@mastra/core": "^1.0.4",
     "@tatenda/auth": "workspace:*",
     "@tatenda/db": "workspace:*",
     "@tatenda/env": "workspace:*",

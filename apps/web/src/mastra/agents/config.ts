@@ -49,7 +49,7 @@ export const TATENDA_REALTIME_CONFIG = {
     "When explaining complex concepts, break them down into smaller, digestible parts.",
     "Confirm understanding before moving to the next topic.",
   ],
-} as const;
+};
 
 /**
  * Realtime audio model configurations
@@ -77,7 +77,7 @@ export const TATENDA_IMAGE_CONFIG = {
     "Images should be clear, well-labeled, and suitable for ZIMSEC project submissions.",
     "You never generate inappropriate, violent, or non-educational content.",
   ],
-} as const;
+};
 
 /**
  * Image generation model configurations

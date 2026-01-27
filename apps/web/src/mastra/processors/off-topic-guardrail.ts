@@ -165,9 +165,18 @@ export class OffTopicGuardrail implements Processor {
     /\b(recipe|cooking tips|fashion advice|celebrity gossip|sports betting|horoscope)\b/i,
   ];
 
-  async processInputStep({ messages, abort }: ProcessorContext) {
-    const latestMessage = messages[messages.length - 1];
+  async processInputStep(context: ProcessorContext) {
+    // Skip processing if no messages
+    if (!("messages" in context)) {
+      return [];
+    }
 
+    const messages = context.messages as Array<{ role: string; content: string | unknown[] }>;
+    if (!messages || messages.length === 0) {
+      return [];
+    }
+
+    const latestMessage = messages[messages.length - 1];
     if (!latestMessage || latestMessage.role !== "user") {
       return [];
     }
@@ -177,8 +186,23 @@ export class OffTopicGuardrail implements Processor {
         ? latestMessage.content.toLowerCase()
         : Array.isArray(latestMessage.content)
           ? latestMessage.content
-              .filter((part) => part.type === "text")
-              .map((part) => part.text)
+              .filter(
+                (part) =>
+                  typeof part === "object" &&
+                  part !== null &&
+                  "type" in part &&
+                  part.type === "text"
+              )
+              .map((part) => {
+                if (
+                  typeof part === "object" &&
+                  part !== null &&
+                  "text" in part
+                ) {
+                  return (part as Record<string, unknown>).text || "";
+                }
+                return "";
+              })
               .join(" ")
               .toLowerCase()
           : "";
@@ -194,22 +218,22 @@ export class OffTopicGuardrail implements Processor {
     );
 
     // Check if message matches off-topic patterns
-    const isOffTopic = this.offTopicPatterns.some((pattern) =>
-      pattern.test(content)
-    );
+    const isOffTopic = this.offTopicPatterns.some((pattern) => pattern.test(content));
 
     // Block if clearly off-topic and no educational content
     if (isOffTopic && !hasEducationalContent) {
-      abort(
-        "I'm Tatenda, your ZIMSEC educational assistant! I'm here to help you with school projects, assignments, and academic questions related to your O Level and A Level studies. Could you please ask me something related to your schoolwork? For example, I can help you with:\n\n• ZIMSEC SBA projects\n• Subject-specific questions (Sciences, Humanities, Languages, etc.)\n• Research and investigation guidance\n• Essay and report writing tips\n• Exam preparation\n\nHow can I assist with your studies today?",
-        {
-          retry: false,
-          metadata: {
-            reason: "Off-topic message detected",
-            processorId: this.id,
-          },
-        }
-      );
+      if ("abort" in context && typeof context.abort === "function") {
+        (context.abort as Function)(
+          "I'm Tatenda, your ZIMSEC educational assistant! I'm here to help you with school projects, assignments, and academic questions related to your O Level and A Level studies. Could you please ask me something related to your schoolwork? For example, I can help you with:\n\n• ZIMSEC SBA projects\n• Subject-specific questions (Sciences, Humanities, Languages, etc.)\n• Research and investigation guidance\n• Essay and report writing tips\n• Exam preparation\n\nHow can I assist with your studies today?",
+          {
+            retry: false,
+            metadata: {
+              reason: "Off-topic message detected",
+              processorId: this.id,
+            },
+          }
+        );
+      }
     }
 
     return [];

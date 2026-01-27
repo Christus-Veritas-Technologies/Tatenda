@@ -12,7 +12,17 @@ import type { Processor, ProcessorContext } from "@mastra/core/processors";
 export class SecurityGuardrail implements Processor {
   id = "security-guardrail";
 
-  async processInputStep({ messages, abort }: ProcessorContext) {
+  async processInputStep(context: ProcessorContext) {
+    // Skip if context doesn't have messages
+    if (!("messages" in context)) {
+      return [];
+    }
+
+    const messages = context.messages as Array<{ role: string; content: string | unknown[] }>;
+    if (!messages || messages.length === 0) {
+      return [];
+    }
+
     const latestMessage = messages[messages.length - 1];
     
     if (!latestMessage || latestMessage.role !== "user") {
@@ -23,8 +33,8 @@ export class SecurityGuardrail implements Processor {
       ? latestMessage.content.toLowerCase()
       : Array.isArray(latestMessage.content)
         ? latestMessage.content
-            .filter((part) => part.type === "text")
-            .map((part) => part.text)
+            .filter((part) => typeof part === "object" && part !== null && "type" in part && (part as Record<string, unknown>).type === "text")
+            .map((part) => typeof part === "object" && part !== null && "text" in part ? (part as Record<string, unknown>).text : "")
             .join(" ")
             .toLowerCase()
         : "";
@@ -59,16 +69,18 @@ export class SecurityGuardrail implements Processor {
     const isBlocked = sensitivePatterns.some((pattern) => pattern.test(content));
 
     if (isBlocked) {
-      abort(
-        "I'm Tatenda, an educational assistant for ZIMSEC projects. I'm designed to help you with your school assignments and learning. I cannot provide system information, credentials, or change my core purpose. How can I assist you with your ZIMSEC project today?",
-        {
-          retry: false,
-          metadata: {
-            reason: "Attempted to extract sensitive information or bypass guardrails",
-            processorId: this.id,
-          },
-        }
-      );
+      if ("abort" in context && typeof context.abort === "function") {
+        (context.abort as Function)(
+          "I'm Tatenda, an educational assistant for ZIMSEC projects. I'm designed to help you with your school assignments and learning. I cannot provide system information, credentials, or change my core purpose. How can I assist you with your ZIMSEC project today?",
+          {
+            retry: false,
+            metadata: {
+              reason: "Attempted to extract sensitive information or bypass guardrails",
+              processorId: this.id,
+            },
+          }
+        );
+      }
     }
 
     return [];

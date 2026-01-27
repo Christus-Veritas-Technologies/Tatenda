@@ -1,4 +1,4 @@
-"use client";
+import { protectRoute } from "@/lib/auth/protect-route";
 
 const TITLE_TEXT = `
  ██████╗ ███████╗████████╗████████╗███████╗██████╗
@@ -12,17 +12,23 @@ const TITLE_TEXT = `
  ╚══██╔══╝    ██╔════╝╚══██╔══╝██╔══██╗██╔════╝██║ ██╔╝
     ██║       ███████╗   ██║   ███████║██║     █████╔╝
     ██║       ╚════██║   ██║   ██╔══██║██║     ██╔═██╗
-    ██║       ███████║   ██║   ██║  ██║╚██████╗██║  ██╗
+    ██║       ███████║   ██║   ██║  ██║╚██████╗██║  ██║
     ╚═╝       ╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
  `;
 
-export default function Home() {
+export default async function Home() {
+  // Protect this page - redirect to /auth if user is not authenticated
+  await protectRoute();
+
   return (
     <div className="container mx-auto max-w-3xl px-4 py-2">
       <pre className="overflow-x-auto font-mono text-sm">{TITLE_TEXT}</pre>
       <div className="grid gap-6">
         <section className="rounded-lg border p-4">
-          <h2 className="mb-2 font-medium">API Status</h2>
+          <h2 className="mb-2 font-medium">Dashboard</h2>
+          <p className="text-sm text-muted-foreground">
+            Welcome to Tatenda! Start creating your ZIMSEC projects.
+          </p>
         </section>
       </div>
     </div>

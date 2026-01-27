@@ -1,0 +1,3 @@
+{
+  "extends": "@tatenda/config/tsconfig.base.json"
+}

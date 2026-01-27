@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "scheme": "tatenda",
+    "userInterfaceStyle": "automatic",
+    "orientation": "default",
+    "web": {
+      "bundler": "metro"
+    },
+    "name": "tatenda",
+    "slug": "tatenda",
+    "plugins": ["expo-font"],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

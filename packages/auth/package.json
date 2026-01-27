@@ -1,0 +1,25 @@
+{
+  "name": "@tatenda/auth",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@better-auth/expo": "catalog:",
+    "@tatenda/db": "workspace:*",
+    "@tatenda/env": "workspace:*",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@tatenda/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

@@ -31,17 +31,17 @@ export default function NotFound() {
           {/* Content */}
           <div className="relative z-10 space-y-4">
             <h2 className="text-3xl font-bold text-foreground">
-              Oops... Wrong Box!
+              Page Not Found
             </h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              You were aiming for a page, but unleashed ancient chaos instead. Typical Pandora
-              move.
+              It seems Tatenda couldn't locate that page. This project might not exist yet, or 
+              you may have taken a wrong turn. Let's get you back on track!
             </p>
 
             <div className="pt-6">
               <Link href="/">
                 <Button size="lg" className="bg-foreground text-background hover:bg-foreground/90">
-                  Go Home
+                  Return to Dashboard
                 </Button>
               </Link>
             </div>

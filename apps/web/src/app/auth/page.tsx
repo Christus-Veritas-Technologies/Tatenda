@@ -28,6 +28,7 @@ export default function AuthPage() {
       await authClient.signIn.social({
         provider: "google",
         callbackURL: "/",
+        newUserCallbackURL: "/onboarding"
       });
     } catch (error) {
       console.error("Google sign-in error:", error);
@@ -49,6 +50,7 @@ export default function AuthPage() {
       const result = await authClient.signIn.magicLink({
         email,
         callbackURL: "/",
+        newUserCallbackURL: "/onboarding"
       });
 
       if (result.error) {

@@ -1,5 +1,6 @@
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { authClient } from "../auth-client";
+import { auth } from "../auth";
 
 /**
  * Server-side authentication guard
@@ -8,25 +9,29 @@ import { authClient } from "../auth-client";
  * If no session exists, redirects to the /auth page.
  *
  * @throws Will redirect to /auth if user is not authenticated
- * @returns Promise<void>
+ * @returns The session object if authenticated
  *
  * @example
  * // Usage in a server component or page
  * export default async function ProtectedPage() {
- *   await protectRoute();
+ *   const session = await protectRoute();
  *
- *   return <h1>This page is protected</h1>;
+ *   return <h1>Welcome, {session.user.name}</h1>;
  * }
  */
-export async function protectRoute(): Promise<void> {
+export async function protectRoute() {
   try {
-    // Fetch the current session from the auth client
-    const session = await authClient.getSession();
+    // Get session using server-side auth API with request headers
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
 
     // If no session exists, redirect to auth page
-    if (!session || !session.data) {
+    if (!session) {
       redirect("/auth");
     }
+
+    return session;
   } catch (error) {
     // If there's any error fetching the session, redirect to auth
     console.error("Auth check error:", error);

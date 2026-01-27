@@ -1,6 +1,11 @@
-import { env } from "@tatenda/env/web";
 import { createAuthClient } from "better-auth/react";
+import { magicLinkClient } from "better-auth/client/plugins";
 
 export const authClient = createAuthClient({
-  baseURL: env.NEXT_PUBLIC_SERVER_URL,
+  baseURL: "/api/auth", // Use local Next.js API route
+  plugins: [magicLinkClient()],
 });
+
+// Re-export useSession for convenience
+export const { useSession, signIn, signOut } = authClient;
+

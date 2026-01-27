@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { AiMail01Icon, GoogleIcon, Robot02Icon } from "@hugeicons/core/stroke-rounded";
+import { AiMail01Icon, GoogleIcon, Robot02Icon } from "@hugeicons/core-free-icons";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -130,7 +130,7 @@ export default function AuthPage() {
                   strokeWidth={1.5}
                   className="mr-2"
                 />
-                {isMagicLinkLoading ? "Sending magic link..." : "Send magic link"}
+                Send magic link
               </Button>
             </form>
 

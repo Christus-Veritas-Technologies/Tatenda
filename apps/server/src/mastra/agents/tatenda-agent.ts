@@ -1,4 +1,5 @@
 import { Agent } from "@mastra/core/agent";
+import { SecurityGuardrail } from "../processors/security-guardrail";
 
 export const tatendaAgent = new Agent({
   id: "tatenda",
@@ -13,4 +14,5 @@ export const tatendaAgent = new Agent({
     "You always maintain academic integrity and encourage original work.",
   ],
   model: "openai/gpt-4o",
+  inputProcessors: [new SecurityGuardrail()],
 });

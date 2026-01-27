@@ -4,6 +4,8 @@
 
 The Tatenda design system establishes a consistent visual language across the platform. It defines color palettes, typography, and usage guidelines to ensure a cohesive and professional user experience.
 
+**Note:** Tatenda currently supports **light mode only**. Dark mode support is planned for future versions.
+
 ---
 
 ## Typography
@@ -26,7 +28,9 @@ font-family: "Poppins", sans-serif;
 
 ## Color Palette
 
-The Tatenda color palette consists of 6 primary colors designed to work harmoniously in light and dark modes.
+The Tatenda color palette consists of 6 primary colors designed for light mode use.
+
+**Note:** While the color system includes variables for both light and dark modes (for future compatibility), only light mode is currently active. Dark mode support will be added in a future release.
 
 ### Brand Colors
 
@@ -162,7 +166,9 @@ export function Dashboard() {
 
 ## Light Mode vs Dark Mode
 
-### Light Mode (Default)
+### Current: Light Mode Only
+
+For **Tatenda v0.1**, only light mode is supported and active.
 
 | Element | Color | Hex |
 |---------|-------|-----|
@@ -172,17 +178,9 @@ export function Dashboard() {
 | Borders | LIGHT | #D6DEE7 |
 | Primary Actions | BRAND | #7148FC |
 
-### Dark Mode
+### Dark Mode (Future)
 
-Automatically applied when the `.dark` class is present on the root element.
-
-| Element | Color | Hex |
-|---------|-------|-----|
-| Background | DARKEST | #0C121C |
-| Text | LIGHTEST | #FFFFFF |
-| Cards | DARK | #1E293B |
-| Borders | rgba(255,255,255,0.1) | Translucent white |
-| Primary Actions | BRAND | #7148FC |
+Dark mode is planned for a future release. When implemented, it will automatically apply when the `.dark` class is present on the root element. The dark mode color mappings are already defined in the CSS, but are not currently active.
 
 ---
 

@@ -1,4 +1,29 @@
-# tatenda
+# Tatenda
+
+**Version 0.1**
+
+Tatenda is an all-in-one E-learning platform for Zimbabwe, designed to help Ordinary and Advanced Level students generate high-quality school projects.
+
+## About Version 0.1
+
+The primary focus of Tatenda v0.1 is to assist students with creating ZIMSEC (Zimbabwe School Examinations Council) School-Based Assessment (SBA) projects. These projects are essential components of the O and A Level curricula in Zimbabwe, emphasizing practical application, research, and problem-solving skills.
+
+### ZIMSEC Projects Covered
+
+ZIMSEC projects follow a structured format that includes:
+- Problem identification
+- Investigation and research
+- Development and implementation
+- Evaluation and analysis
+
+Key subject areas include:
+- **Computer Science** - Software development projects
+- **Sciences** - Physics, Chemistry, Biology, Agriculture
+- **Heritage Studies** - Cultural and historical research
+- **English** - Language and literature projects
+- **Humanities** - Geography, History, and Social Sciences
+
+---
 
 This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines Next.js, Hono, and more.
 

@@ -73,9 +73,7 @@ export default function AuthPage() {
         initial={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
-        <Card className="relative overflow-hidden"
->
-          
+        <Card className="relative overflow-hidden">
           <CardHeader className="text-center pb-6">
             {/* Logo */}
             <div className="flex justify-center mb-4">
@@ -118,15 +116,7 @@ export default function AuthPage() {
                 className="w-full h-11 bg-primary text-primary-foreground hover:bg-primary/90"
                 disabled={isAnyLoading}
               >
-                <HugeiconsIcon
-                  icon={AiMail01Icon}
-                  size={20}
-                  strokeWidth={1.5}
-                  className="mr-2"
-                />
-                Send magic link
-              </Button>
-            </fo{isMagicLinkLoading ? (
+                {isMagicLinkLoading ? (
                   <>
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Sending magic link...
@@ -142,13 +132,30 @@ export default function AuthPage() {
                     Send magic link
                   </>
                 )}
+              </Button>
+            </form>
+
+            {/* Divider */}
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
+              </div>
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-card px-2 text-muted-foreground">
                   Or continue with
                 </span>
               </div>
             </div>
-{isGoogleLoading ? (
+
+            {/* Google Sign In */}
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-11 border-border hover:bg-secondary"
+              onClick={handleGoogleSignIn}
+              disabled={isAnyLoading}
+            >
+              {isGoogleLoading ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Signing in with Google...
@@ -164,16 +171,7 @@ export default function AuthPage() {
                   />
                   Sign in with Google
                 </>
-              )
-              disabled={isAnyLoading}
-            >
-              <HugeiconsIcon
-                icon={GoogleIcon}
-                size={20}
-                strokeWidth={1.5}
-                className="mr-2"
-              />
-              {isGoogleLoading ? "Signing in with Google..." : "Sign in with Google"}
+              )}
             </Button>
 
             {/* Terms */}

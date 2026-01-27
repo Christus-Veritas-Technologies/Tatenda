@@ -6,8 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { AiMail01Icon, GoogleIcon, Robot02Icon } from "@hugeicons/core-free-icons";
+import { AiMail01Icon, Robot02Icon } from "@hugeicons/core-free-icons";
+import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -68,19 +70,11 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <motion.div
-        initial={{ opacity: 0, y: 50 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{
-          type: "spring",
-          stiffness: 260,
-          damping: 20,
-          duration: 0.6,
-        }}
+        initial={{ opacity: 1, y: 0 }}
         className="w-full max-w-md"
       >
-        <Card className="relative overflow-hidden transition-all duration-300 hover:shadow-[0_0_30px_rgba(113,72,252,0.3)] hover:border-brand/50">
-          {/* Glow effect overlay */}
-          <div className="absolute inset-0 opacity-0 transition-opacity duration-300 pointer-events-none group-hover:opacity-100 bg-gradient-to-br from-brand/5 to-transparent" />
+        <Card className="relative overflow-hidden"
+>
           
           <CardHeader className="text-center pb-6">
             {/* Logo */}
@@ -132,26 +126,45 @@ export default function AuthPage() {
                 />
                 Send magic link
               </Button>
-            </form>
-
-            {/* Divider */}
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
-              </div>
+            </fo{isMagicLinkLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Sending magic link...
+                  </>
+                ) : (
+                  <>
+                    <HugeiconsIcon
+                      icon={AiMail01Icon}
+                      size={20}
+                      strokeWidth={1.5}
+                      className="mr-2"
+                    />
+                    Send magic link
+                  </>
+                )}
               <div className="relative flex justify-center text-xs uppercase">
                 <span className="bg-card px-2 text-muted-foreground">
                   Or continue with
                 </span>
               </div>
             </div>
-
-            {/* Google Sign In */}
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full h-11 border-border hover:bg-secondary"
-              onClick={handleGoogleSignIn}
+{isGoogleLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Signing in with Google...
+                </>
+              ) : (
+                <>
+                  <Image
+                    src="/icons/google.png"
+                    alt="Google"
+                    width={20}
+                    height={20}
+                    className="mr-2"
+                  />
+                  Sign in with Google
+                </>
+              )
               disabled={isAnyLoading}
             >
               <HugeiconsIcon

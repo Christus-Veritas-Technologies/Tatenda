@@ -20,21 +20,15 @@ import { auth } from "../auth";
  * }
  */
 export async function protectRoute() {
-  try {
-    // Get session using server-side auth API with request headers
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+  // Get session using server-side auth API with request headers
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-    // If no session exists, redirect to auth page
-    if (!session) {
-      redirect("/auth");
-    }
-
-    return session;
-  } catch (error) {
-    // If there's any error fetching the session, redirect to auth
-    console.error("Auth check error:", error);
+  // If no session exists, redirect to auth page
+  if (!session) {
     redirect("/auth");
   }
+
+  return session;
 }

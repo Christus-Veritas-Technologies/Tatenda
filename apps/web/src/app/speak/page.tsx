@@ -351,12 +351,17 @@ export default function SpeakPage() {
                           size="sm"
                           variant="outline"
                           className="flex items-center gap-2 text-brand border-brand/30 hover:bg-brand/10"
-                          asChild
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = msg.pdfAttachment!.downloadUrl;
+                            link.download = msg.pdfAttachment!.name;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }}
                         >
-                          <a href={msg.pdfAttachment.downloadUrl} download>
-                            <HugeiconsIcon icon={Download01Icon} size={16} />
-                            Download
-                          </a>
+                          <HugeiconsIcon icon={Download01Icon} size={16} />
+                          Download
                         </Button>
                       </div>
                     </Card>
@@ -393,12 +398,17 @@ export default function SpeakPage() {
                               size="sm"
                               variant="outline"
                               className="flex items-center gap-2 text-brand border-brand/30 hover:bg-brand/10"
-                              asChild
+                              onClick={() => {
+                                const link = document.createElement('a');
+                                link.href = msg.pdfAttachment!.downloadUrl;
+                                link.download = msg.pdfAttachment!.name;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                              }}
                             >
-                              <a href={msg.pdfAttachment.downloadUrl} download>
-                                <HugeiconsIcon icon={Download01Icon} size={16} />
-                                Download
-                              </a>
+                              <HugeiconsIcon icon={Download01Icon} size={16} />
+                              Download
                             </Button>
                           </div>
                         </Card>

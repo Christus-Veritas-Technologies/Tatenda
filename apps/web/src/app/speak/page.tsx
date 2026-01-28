@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
+import { ChatHistorySidebar } from "@/components/chat-history-sidebar";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { 
   ArrowRight01Icon,
@@ -23,6 +24,7 @@ import {
   Download01Icon,
   Loading02Icon,
 } from "@hugeicons/core-free-icons";
+import { nanoid } from "nanoid";
 
 // Message types for different AI responses
 type MessageType = 
@@ -60,7 +62,31 @@ export default function SpeakPage() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
   const { data: session, isPending } = authClient.useSession();
+
+  // Initialize with a new thread on mount
+  useEffect(() => {
+    if (!currentThreadId) {
+      setCurrentThreadId(nanoid());
+    }
+  }, [currentThreadId]);
+
+  // Check message count for current thread
+  const { data: threadData, refetch: refetchThreadData } = useQuery({
+    queryKey: ["thread", currentThreadId],
+    queryFn: async () => {
+      if (!currentThreadId) return null;
+      const response = await fetch(`/api/threads/${currentThreadId}`);
+      if (!response.ok) return null;
+      return response.json() as Promise<{ messageCount: number; isLimitReached: boolean }>;
+    },
+    enabled: !!currentThreadId,
+    refetchInterval: false,
+  });
+
+  const isLimitReached = threadData?.isLimitReached || false;
+  const messageCount = threadData?.messageCount || 0;
 
   // Helper function to update a message by ID
   const updateMessage = (id: string, updates: Partial<Message>) => {
@@ -82,6 +108,7 @@ export default function SpeakPage() {
           message: userMessage,
           userName: session?.user?.name || "User",
           userEmail: session?.user?.email || "",
+          threadId: currentThreadId,
         }),
       });
 
@@ -122,6 +149,8 @@ export default function SpeakPage() {
           
           if (done) {
             setIsStreaming(false);
+            // Refetch thread data to update message count
+            refetchThreadData();
             break;
           }
 
@@ -229,9 +258,26 @@ export default function SpeakPage() {
     setMessage((prev) => (prev ? prev + " " + text : text));
   };
 
+  const handleThreadSelect = (threadId: string) => {
+    setCurrentThreadId(threadId);
+    setMessages([]); // Clear current messages (will load from DB if needed)
+  };
+
+  const handleNewChat = () => {
+    setCurrentThreadId(nanoid());
+    setMessages([]);
+  };
+
   const showQuickActions = messages.length === 0;
 
   return (
+    <>
+      {/* Chat History Sidebar */}
+      <ChatHistorySidebar
+        currentThreadId={currentThreadId}
+        onThreadSelect={handleThreadSelect}
+        onNewChat={handleNewChat}
+      />
 
       <div className="min-h-screen bg-background">
         {/* Header */}
@@ -460,27 +506,52 @@ export default function SpeakPage() {
         {/* Input Section - Fixed at bottom */}
         <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t">
           <div className="container max-w-4xl mx-auto px-4 py-4">
-            <div className="relative">
-              <Input
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type your message..."
-                className="pr-12 h-12 rounded-full border-2 focus-visible:ring-brand"
-                disabled={isStreaming}
-              />
-              <Button
-                size="icon"
-                onClick={handleSendMessage}
-                disabled={!message.trim() || isStreaming}
-                className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full w-10 h-10 bg-brand hover:bg-brand/90 disabled:opacity-50"
-              >
-                <HugeiconsIcon icon={ArrowRight01Icon} size={20} />
-              </Button>
-            </div>
+            {isLimitReached ? (
+              // Message limit reached UI
+              <Card className="p-4 border-brand/30 bg-brand/5">
+                <div className="flex items-center gap-3">
+                  <HugeiconsIcon icon={AlertCircle} size={20} className="text-brand" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground">
+                      Maximum chat size reached
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Please start a new chat to continue
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleNewChat}
+                    className="bg-brand hover:bg-brand/90"
+                  >
+                    New Chat
+                  </Button>
+                </div>
+              </Card>
+            ) : (
+              // Normal input UI
+              <div className="relative">
+                <Input
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Type your message..."
+                  className="pr-12 h-12 rounded-full border-2 focus-visible:ring-brand"
+                  disabled={isStreaming}
+                />
+                <Button
+                  size="icon"
+                  onClick={handleSendMessage}
+                  disabled={!message.trim() || isStreaming}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full w-10 h-10 bg-brand hover:bg-brand/90 disabled:opacity-50"
+                >
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={20} />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
     </div>
+    </>
   );
 }

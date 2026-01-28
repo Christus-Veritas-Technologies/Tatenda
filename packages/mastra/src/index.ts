@@ -53,14 +53,14 @@ export {
 export const mastra = new Mastra({
   agents: {
     // Text agents
-    tatendaFreeAgent,
-    tatendaProAgent,
+    "tatenda-free": tatendaFreeAgent,
+    "tatenda-pro": tatendaProAgent,
     // Realtime agents
-    tatendaRealtimeFreeAgent,
-    tatendaRealtimeProAgent,
+    "tatenda-realtime-free": tatendaRealtimeFreeAgent,
+    "tatenda-realtime-pro": tatendaRealtimeProAgent,
     // Image agents
-    tatendaImageFreeAgent,
-    tatendaImageProAgent,
+    "tatenda-image-free": tatendaImageFreeAgent,
+    "tatenda-image-pro": tatendaImageProAgent,
   },
 });
 
@@ -72,12 +72,12 @@ export function createMastra(
 ) {
   return new Mastra({
     agents: {
-      tatendaFreeAgent,
-      tatendaProAgent,
-      tatendaRealtimeFreeAgent,
-      tatendaRealtimeProAgent,
-      tatendaImageFreeAgent,
-      tatendaImageProAgent,
+      "tatenda-free": tatendaFreeAgent,
+      "tatenda-pro": tatendaProAgent,
+      "tatenda-realtime-free": tatendaRealtimeFreeAgent,
+      "tatenda-realtime-pro": tatendaRealtimeProAgent,
+      "tatenda-image-free": tatendaImageFreeAgent,
+      "tatenda-image-pro": tatendaImageProAgent,
     },
     ...config,
   });

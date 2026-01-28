@@ -63,7 +63,7 @@ export function AppSidebar() {
   const [searchQuery, setSearchQuery] = useState("");
 
   return (
-    <Sidebar className="border-r bg-muted/30">
+    <Sidebar className="bg-muted/30">
       <SidebarContent className="bg-muted/30">
         {/* Logo/Brand */}
         <SidebarGroup>
@@ -82,7 +82,7 @@ export function AppSidebar() {
 
         {/* Search */}
         <SidebarGroup>
-          <div className="px-4 pb-2">
+          <div className="pb-2">
             <div className="relative">
               <HugeiconsIcon
                 icon={Search01Icon}
@@ -105,29 +105,40 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => {
-                const isActive = pathname === item.url;
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <Link href={item.url as any} className="w-full">
-                      <SidebarMenuButton 
-                        isActive={isActive}
-                        className={cn(
-                          "transition-colors",
-                          isActive && "bg-brand text-white hover:bg-brand/90 hover:text-white"
-                        )}
-                      >
-                        <HugeiconsIcon
-                          icon={item.icon}
-                          size={20}
-                          strokeWidth={1.5}
-                        />
-                        <span>{item.title}</span>
-                      </SidebarMenuButton>
-                    </Link>
-                  </SidebarMenuItem>
-                );
-              })}
+              {menuItems
+                .filter((item) =>
+                  item.title.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map((item) => {
+                  const isActive = pathname === item.url;
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <Link href={item.url as any} className="w-full rounded-xl">
+                        <SidebarMenuButton 
+                          isActive={isActive}
+                          className={cn(
+                            "transition-colors rounded-md",
+                            isActive && "bg-purple-600 text-white hover:bg-brand/90 hover:text-white"
+                          )}
+                        >
+                          <HugeiconsIcon
+                            icon={item.icon}
+                            size={20}
+                            strokeWidth={1.5}
+                          />
+                          <span>{item.title}</span>
+                        </SidebarMenuButton>
+                      </Link>
+                    </SidebarMenuItem>
+                  );
+                })}
+              {searchQuery && menuItems.filter((item) =>
+                item.title.toLowerCase().includes(searchQuery.toLowerCase())
+              ).length === 0 && (
+                <div className="px-4 py-8 text-center">
+                  <p className="text-sm text-muted-foreground">No results found</p>
+                </div>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -139,10 +150,10 @@ export function AppSidebar() {
 export function DashboardLayout({ children, creditsRemaining }: { children: React.ReactNode; creditsRemaining?: number }) {
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full">
+      <div className="flex min-h-screen w-full bg-muted/30">
         <AppSidebar />
-        <main className="flex-1">
-          <div className="border-b bg-background">
+        <main className="flex-1 bg-white m-2 rounded-lg">
+          <div className="border-b bg-background rounded-lg">
             <div className="flex h-16 items-center justify-between px-4">
               <SidebarTrigger />
               <div className="flex items-center gap-3">

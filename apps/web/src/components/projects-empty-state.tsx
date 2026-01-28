@@ -1,8 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { FileAddIcon } from "@hugeicons/core-free-icons";
+import Image from "next/image";
 
 interface ProjectsEmptyStateProps {
   onCreateProject?: () => void;
@@ -17,12 +16,13 @@ export function ProjectsEmptyState({
 
   return (
     <div className="flex flex-col items-center justify-center py-20 px-4 rounded-lg border border-dashed border-muted-foreground/25 bg-muted/20">
-      <div className="w-20 h-20 rounded-full bg-brand/10 flex items-center justify-center mb-6">
-        <HugeiconsIcon
-          icon={FileAddIcon}
-          size={48}
-          color="#7148FC"
-          strokeWidth={1}
+      <div className="w-48 h-48 rounded-full overflow-hidden mb-6 bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/20 dark:to-blue-900/20 flex items-center justify-center">
+        <Image
+          src="/images/empty-state.svg"
+          alt="No projects"
+          width={192}
+          height={192}
+          className="object-contain"
         />
       </div>
       <h3 className="text-2xl font-semibold text-foreground mb-2 text-center">

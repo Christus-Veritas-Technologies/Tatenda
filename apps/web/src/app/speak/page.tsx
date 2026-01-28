@@ -4,14 +4,14 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { 
-  FileTextIcon, 
-  PlusSignIcon, 
+  FileScriptIcon,
+  Add01Icon,
   ArrowRight01Icon,
   Folder01Icon,
   Calendar03Icon,
-  ClockIcon,
-} from "@hugeicons/react";
+} from "@hugeicons/core-free-icons";
 
 export default function SpeakPage() {
   const [message, setMessage] = useState("");
@@ -64,7 +64,7 @@ export default function SpeakPage() {
           {/* Previously Viewed Projects */}
           <Card className="p-6">
             <div className="flex items-center gap-2 mb-4">
-              <Folder01Icon className="w-5 h-5 text-brand" />
+              <HugeiconsIcon icon={Folder01Icon} size={20} className="text-brand" />
               <h3 className="font-semibold">Previously viewed projects</h3>
             </div>
             <div className="space-y-3">
@@ -73,7 +73,7 @@ export default function SpeakPage() {
                   key={project.id}
                   className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors text-left"
                 >
-                  <FileTextIcon className="w-5 h-5 text-muted-foreground" />
+                  <HugeiconsIcon icon={FileScriptIcon} size={20} className="text-muted-foreground" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{project.title}</p>
                     <p className="text-xs text-muted-foreground">{project.subject}</p>
@@ -86,7 +86,7 @@ export default function SpeakPage() {
           {/* Summarize Last Session */}
           <Card className="p-6">
             <div className="flex items-center gap-2 mb-4">
-              <Calendar03Icon className="w-5 h-5 text-brand" />
+              <HugeiconsIcon icon={Calendar03Icon} size={20} className="text-brand" />
               <h3 className="font-semibold">Summarize your last session</h3>
             </div>
             <button className="w-full flex items-center gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors text-left">
@@ -103,7 +103,7 @@ export default function SpeakPage() {
           {/* Suggested Tasks */}
           <Card className="p-6">
             <div className="flex items-center gap-2 mb-4">
-              <PlusSignIcon className="w-5 h-5 text-brand" />
+              <HugeiconsIcon icon={Add01Icon} size={20} className="text-brand" />
               <h3 className="font-semibold">Suggested Task</h3>
             </div>
             <div className="space-y-2">
@@ -113,7 +113,7 @@ export default function SpeakPage() {
                   className="w-full flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors text-left"
                 >
                   <span className="text-sm font-medium">{task.title}</span>
-                  <ArrowRight01Icon className="w-4 h-4 text-muted-foreground" />
+                  <HugeiconsIcon icon={ArrowRight01Icon} size={16} className="text-muted-foreground" />
                 </button>
               ))}
             </div>
@@ -122,12 +122,12 @@ export default function SpeakPage() {
           {/* Another Suggested Task */}
           <Card className="p-6">
             <div className="flex items-center gap-2 mb-4">
-              <PlusSignIcon className="w-5 h-5 text-brand" />
+              <HugeiconsIcon icon={Add01Icon} size={20} className="text-brand" />
               <h3 className="font-semibold">Suggested Task</h3>
             </div>
             <button className="w-full flex items-center justify-between p-3 rounded-lg border hover:bg-muted/50 transition-colors text-left">
               <span className="text-sm font-medium">Create a Biology practical report</span>
-              <ArrowRight01Icon className="w-4 h-4 text-muted-foreground" />
+              <HugeiconsIcon icon={ArrowRight01Icon} size={16} className="text-muted-foreground" />
             </button>
           </Card>
         </div>
@@ -136,7 +136,7 @@ export default function SpeakPage() {
         <Card className="p-6 mb-20">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
-              <FileTextIcon className="w-5 h-5 text-brand" />
+              <HugeiconsIcon icon={FileScriptIcon} size={20} className="text-brand" />
               <h3 className="font-semibold">My Tasks</h3>
               <span className="text-xs text-muted-foreground">13</span>
             </div>
@@ -162,7 +162,7 @@ export default function SpeakPage() {
                   <span className="flex-1 text-sm">{task.name}</span>
                   {task.time && (
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <ClockIcon className="w-3 h-3" />
+                      <span>⏰</span>
                       <span>{task.time}</span>
                     </div>
                   )}
@@ -212,7 +212,7 @@ export default function SpeakPage() {
         <div className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t">
           <div className="container max-w-4xl mx-auto px-4 py-4">
             <div className="relative">
-              <PlusSignIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <HugeiconsIcon icon={Add01Icon} size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
@@ -223,7 +223,7 @@ export default function SpeakPage() {
                 size="icon"
                 className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full w-10 h-10 bg-brand hover:bg-brand/90"
               >
-                <ArrowRight01Icon className="w-5 h-5" />
+                <HugeiconsIcon icon={ArrowRight01Icon} size={20} />
               </Button>
             </div>
           </div>

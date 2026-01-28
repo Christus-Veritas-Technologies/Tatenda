@@ -1,6 +1,19 @@
 import { headers } from "next/headers";
 import { authClient } from "@/lib/auth-client";
-import { mastra, tatendaFreeAgent } from "@tatenda/mastra";
+import { tatendaFreeAgent } from "@tatenda/mastra";
+
+// Structured response types
+export type MessageType = "normal" | "pdf" | "normal-with-pdf";
+
+export interface ChatResponse {
+  messageType: MessageType;
+  text: string | null;
+  pdf: {
+    url: string;
+    name: string;
+    size: string; // Formatted size (e.g., "1.2 MB")
+  } | null;
+}
 
 export async function POST(request: Request) {
   try {
@@ -50,81 +63,69 @@ export async function POST(request: Request) {
       headers: { "Content-Type": "application/json" },
     }).catch(err => console.error("[Chat] Failed to increment message count:", err));
 
-    // Stream response with memory context
-    const stream = await tatendaFreeAgent.stream(
-      message,
-      {
-        memory: {
-          thread: threadId,
-          resource: session.user.id,
-        },
-        onFinish: ({ text, finishReason, usage }) => {
-          console.log("[Chat] Response finished:", { 
-            textLength: text?.length,
-            finishReason,
-            usage 
-          });
-        },
-      }
-    );
+    // Generate response with memory context (non-streaming for reliability)
+    const response = await tatendaFreeAgent.generate(message, {
+      memory: {
+        thread: threadId,
+        resource: session.user.id,
+      },
+    });
 
-    // Create a ReadableStream from the agent's textStream
-    const encoder = new TextEncoder();
-    
-    const readableStream = new ReadableStream({
-      async start(controller) {
-        try {
-          let fullText = '';
-          let pdfToolResult: any = null;
+    console.log("[Chat] Response received:", {
+      textLength: response.text?.length,
+      toolCallsCount: response.toolCalls?.length || 0,
+      toolResultsCount: (response as any).toolResults?.length || 0,
+    });
 
-          // Stream the text response in real-time
-          for await (const textChunk of stream.textStream) {
-            fullText += textChunk;
-            controller.enqueue(encoder.encode(textChunk));
-          }
-
-          // After streaming completes, check if any tools were called
-          // Access the final response which contains tool call information
-          const response = await stream;
-          
-          if (response?.toolCalls && Array.isArray(response.toolCalls)) {
-            for (const toolCall of response.toolCalls) {
-              if (toolCall.toolName === 'generatePDF' && toolCall.result?.success) {
-                pdfToolResult = toolCall.result;
-                console.log("[Chat] PDF tool result found:", pdfToolResult);
-                break;
-              }
-            }
-          }
-
-          // If PDF was generated, append PDF metadata as JSON
-          if (pdfToolResult?.success) {
-            console.log("[Chat] Appending PDF metadata to stream");
-            const pdfMetadata = JSON.stringify({
-              __PDF_ATTACHMENT__: true,
-              fileName: pdfToolResult.fileName,
-              fileSize: pdfToolResult.fileSize,
-              downloadUrl: pdfToolResult.downloadUrl,
-              createdAt: pdfToolResult.createdAt,
-            });
-            controller.enqueue(encoder.encode(`\n\n${pdfMetadata}`));
-          }
-
-          controller.close();
-        } catch (error) {
-          console.error("[Chat] Streaming error:", error);
-          controller.enqueue(encoder.encode("We couldn't process your message"));
-          controller.close();
+    // Check if PDF was generated - toolResults contains executed tool results
+    // Structure: { type: "tool-result", payload: { toolName, result: {...} } }
+    let pdfResult: any = null;
+    const toolResults = (response as any).toolResults;
+    if (toolResults && Array.isArray(toolResults)) {
+      for (const item of toolResults) {
+        const toolName = item.payload?.toolName;
+        const result = item.payload?.result;
+        
+        console.log("[Chat] Checking tool result:", { toolName, success: result?.success });
+        
+        if ((toolName === 'generatePDF' || toolName === 'generate-pdf') && result?.success) {
+          pdfResult = result;
+          console.log("[Chat] PDF generated:", pdfResult);
+          break;
         }
-      },
+      }
+    }
+
+    // Format file size helper
+    const formatFileSize = (bytes: number): string => {
+      if (bytes === 0) return "0 B";
+      const k = 1024;
+      const sizes = ["B", "KB", "MB", "GB"];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+    };
+
+    // Build structured response
+    const chatResponse: ChatResponse = {
+      messageType: pdfResult 
+        ? (response.text ? "normal-with-pdf" : "pdf") 
+        : "normal",
+      text: response.text || null,
+      pdf: pdfResult ? {
+        url: pdfResult.downloadUrl,
+        name: pdfResult.fileName,
+        size: formatFileSize(pdfResult.fileSize),
+      } : null,
+    };
+
+    console.log("[Chat] Sending response:", {
+      messageType: chatResponse.messageType,
+      hasText: !!chatResponse.text,
+      hasPdf: !!chatResponse.pdf,
     });
 
-    return new Response(readableStream, {
-      headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-        "Transfer-Encoding": "chunked",
-      },
-    });
+    return Response.json(chatResponse);
+
   } catch (error) {
     console.error("[Chat] Error:", {
       name: error instanceof Error ? error.name : "Unknown",
@@ -132,11 +133,13 @@ export async function POST(request: Request) {
       stack: error instanceof Error ? error.stack : undefined,
     });
 
-    return new Response("We couldn't process your message", {
-      status: 200,
-      headers: {
-        "Content-Type": "text/plain; charset=utf-8",
-      },
-    });
+    // Return error as structured response
+    const errorResponse: ChatResponse = {
+      messageType: "normal",
+      text: "We couldn't process your message. Please try again.",
+      pdf: null,
+    };
+
+    return Response.json(errorResponse, { status: 500 });
   }
 }

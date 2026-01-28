@@ -57,8 +57,8 @@ export const TATENDA_AGENT_CONFIG = {
  * Model configurations for different plan tiers
  */
 export const TATENDA_MODELS = {
-  free: "openai/gpt-4o",
-  pro: "openai/gpt-4o",
+  free: "openai/gpt-4.1",
+  pro: "openai/gpt-4.1",
 } as const;
 
 /**

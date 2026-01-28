@@ -33,16 +33,8 @@ export default async function DashboardPage() {
     redirect("/login" as any);
   }
 
-  // Calculate credits
-  const creditsPerPlan = {
-    free: 0,
-    student: 10,
-    pro: 100,
-  };
-
-  const totalCredits = creditsPerPlan[user.plan as keyof typeof creditsPerPlan] || 0;
-  const creditsUsed = user.projects.length;
-  const creditsRemaining = Math.max(0, totalCredits - creditsUsed);
+  // Get credits from database
+  const creditsRemaining = user.credits;
 
   return (
     <DashboardLayout creditsRemaining={creditsRemaining}>

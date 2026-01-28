@@ -150,7 +150,7 @@ export function AppSidebar() {
           <div className="pb-4">
             <Button 
               className="w-full bg-brand hover:bg-brand/90 text-white"
-              onClick={() => window.location.href = '/dashboard/billing' as any}
+              onClick={() => window.location.href = '/packages' as any}
             >
               <HugeiconsIcon icon={CoinsIcon} size={18} strokeWidth={1.5} />
               <span>Purchase More Credits</span>

@@ -77,22 +77,18 @@ export function NotificationsButton() {
             No notifications yet
           </div>
         ) : (
-          <div className="max-h-96 overflow-y-auto">
-            {notifications.map((notification) => (
-              <DropdownMenuItem
-                key={notification.id}
-                className="cursor-pointer"
-                onClick={() => handleNotificationClick(notification)}
-              >
-                <div className="flex flex-col gap-1">
-                  <p className="text-sm">{notification.text}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {new Date(notification.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-              </DropdownMenuItem>
-            ))}
-          </div>
+          notifications.map((notification) => (
+            <DropdownMenuItem
+              key={notification.id}
+              className="cursor-pointer flex flex-col gap-1"
+              onClick={() => handleNotificationClick(notification)}
+            >
+              <p className="text-sm">{notification.text}</p>
+              <p className="text-xs text-muted-foreground">
+                {new Date(notification.createdAt).toLocaleDateString()}
+              </p>
+            </DropdownMenuItem>
+          ))
         )}
       </DropdownMenuContent>
     </DropdownMenu>

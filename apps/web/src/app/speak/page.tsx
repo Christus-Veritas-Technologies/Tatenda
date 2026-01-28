@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -32,21 +33,20 @@ type MessageType =
   | "error"            // Error message
   | "pdf"              // PDF attachment only
   | "normal-with-pdf"  // Message with PDF attachment
-  | "loading";         // Loading state (e.g., generating PDF)
+  | "loading";         // Loading state
 
 type PDFAttachment = {
   name: string;
-  size: number;        // In bytes
-  createdAt: Date;
-  downloadUrl: string;
+  size: string;        // Formatted size string (e.g., "1.2 MB")
+  url: string;
 };
 
 type Message = {
-  id: string;          // Unique ID for each message to update later
+  id: string;
   role: "user" | "assistant";
-  content: string;
+  content: string | null;
   type: MessageType;
-  pdfAttachment?: PDFAttachment;
+  pdf?: PDFAttachment;
 };
 
 // Helper function to format file size
@@ -58,10 +58,21 @@ function formatFileSize(bytes: number): string {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
+// API response type
+interface ChatResponse {
+  messageType: "normal" | "pdf" | "normal-with-pdf";
+  text: string | null;
+  pdf: {
+    url: string;
+    name: string;
+    size: string;
+  } | null;
+}
+
 export default function SpeakPage() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [currentThreadId, setCurrentThreadId] = useState<string | null>(null);
   const { data: session, isPending } = authClient.useSession();
 
@@ -98,7 +109,7 @@ export default function SpeakPage() {
   };
 
   const chatMutation = useMutation({
-    mutationFn: async (userMessage: string) => {
+    mutationFn: async (userMessage: string): Promise<ChatResponse> => {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
@@ -116,109 +127,46 @@ export default function SpeakPage() {
         throw new Error("Failed to send message");
       }
 
-      if (!response.body) {
-        throw new Error("No response body");
-      }
-
-      return response.body;
+      return response.json();
     },
     onMutate: () => {
-      setIsStreaming(true);
-      // Add empty assistant message that will be filled with streamed content
+      setIsLoading(true);
+      // Add loading message
       const messageId = `msg-${Date.now()}`;
       setMessages((prev) => [
         ...prev,
         { 
           id: messageId,
           role: "assistant", 
-          content: "",
-          type: "normal",
+          content: null,
+          type: "loading",
         },
       ]);
       return { messageId };
     },
-    onSuccess: async (stream, _variables, context) => {
+    onSuccess: (data: ChatResponse, _variables, context) => {
       const messageId = context?.messageId;
-      const reader = stream.getReader();
-      const decoder = new TextDecoder();
-      let accumulatedText = "";
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          
-          if (done) {
-            setIsStreaming(false);
-            
-            // Check if response contains PDF metadata
-            const pdfMatch = accumulatedText.match(/\n\n(\{\"__PDF_ATTACHMENT__\":true,.+\})$/);
-            if (pdfMatch) {
-              try {
-                const pdfData = JSON.parse(pdfMatch[1]);
-                const textContent = accumulatedText.replace(pdfMatch[0], "").trim();
-                
-                setMessages((prev) => 
-                  prev.map((msg) => 
-                    msg.id === messageId 
-                      ? { 
-                          ...msg, 
-                          content: textContent,
-                          type: "normal-with-pdf" as MessageType,
-                          pdfAttachment: {
-                            name: pdfData.fileName,
-                            size: pdfData.fileSize,
-                            createdAt: new Date(pdfData.createdAt),
-                            downloadUrl: pdfData.downloadUrl,
-                          }
-                        }
-                      : msg
-                  )
-                );
-              } catch (e) {
-                console.error("[Chat] Failed to parse PDF metadata:", e);
+      
+      // Update the loading message with the actual response
+      setMessages((prev) => 
+        prev.map((msg) => 
+          msg.id === messageId 
+            ? { 
+                ...msg, 
+                content: data.text,
+                type: data.messageType,
+                pdf: data.pdf ? {
+                  name: data.pdf.name,
+                  size: data.pdf.size,
+                  url: data.pdf.url,
+                } : undefined,
               }
-            }
-            
-            // Refetch thread data to update message count
-            refetchThreadData();
-            break;
-          }
+            : msg
+        )
+      );
 
-          const chunk = decoder.decode(value, { stream: true });
-          accumulatedText += chunk;
-
-          // Update the message with accumulated text (excluding PDF metadata if present)
-          const displayText = accumulatedText.replace(/\n\n\{\"__PDF_ATTACHMENT__\":true,.+\}$/, "");
-          setMessages((prev) => 
-            prev.map((msg) => 
-              msg.id === messageId 
-                ? { ...msg, content: displayText }
-                : msg
-            )
-          );
-        }
-
-        // Check if the response is an error message
-        if (accumulatedText === "We couldn't process your message") {
-          setMessages((prev) => 
-            prev.map((msg) => 
-              msg.id === messageId 
-                ? { ...msg, type: "error" as MessageType }
-                : msg
-            )
-          );
-        }
-      } catch (error) {
-        console.error("[Chat] Streaming error:", error);
-        setMessages((prev) => 
-          prev.map((msg) => 
-            msg.id === messageId 
-              ? { ...msg, content: "We couldn't process your message", type: "error" as MessageType }
-              : msg
-          )
-        );
-        setIsStreaming(false);
-      }
+      setIsLoading(false);
+      refetchThreadData();
     },
     onError: (error, _variables, context) => {
       console.error("[Chat] Mutation error:", error);
@@ -230,7 +178,7 @@ export default function SpeakPage() {
             : msg
         )
       );
-      setIsStreaming(false);
+      setIsLoading(false);
     },
   });
 
@@ -365,201 +313,116 @@ export default function SpeakPage() {
 
           {/* Messages Display */}
           {messages.length > 0 && (
-            <div className="space-y-4 mb-20">
-              {messages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-                >
-                  {/* Error Message */}
-                  {msg.type === "error" && (
-                    <div className="max-w-[80%] p-4 border border-red-300 text-red-500 rounded-lg flex items-start gap-3">
-                      <HugeiconsIcon icon={AlertIcon} size={20} className="flex-shrink-0 mt-0.5" />
-                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                    </div>
-                  )}
+            <div className="space-y-6 mb-20">
+              {messages.map((msg) => {
+                // Get user initials for avatar fallback
+                const userInitials = session?.user?.name
+                  ?.split(" ")
+                  .map((n) => n[0])
+                  .join("")
+                  .toUpperCase()
+                  .slice(0, 2) || "U";
 
-                  {/* Loading Message */}
-                  {msg.type === "loading" && (
-                    <Card className="max-w-[80%] p-4 bg-muted border-brand/30">
-                      <div className="flex items-center gap-3">
-                        <HugeiconsIcon 
-                          icon={Loading02Icon} 
-                          size={20} 
-                          className="text-brand animate-spin" 
-                        />
-                        <div className="space-y-2">
-                          <p className="text-sm text-muted-foreground">
-                            {msg.content || "Processing your request..."}
-                          </p>
-                          <div className="flex gap-1">
-                            <div className="w-2 h-2 bg-brand rounded-full animate-bounce" />
-                            <div className="w-2 h-2 bg-brand rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
-                            <div className="w-2 h-2 bg-brand rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  )}
-
-                  {/* PDF Attachment Only */}
-                  {msg.type === "pdf" && msg.pdfAttachment && (
-                    <Card className="max-w-[80%] overflow-hidden border-2 border-brand/20 bg-gradient-to-br from-brand/5 to-purple-50 shadow-lg hover:shadow-xl transition-shadow">
-                      {/* Header with gradient */}
-                      <div className="bg-gradient-to-r from-brand to-purple-600 p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
-                            <HugeiconsIcon icon={File02Icon} size={24} className="text-white" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-white text-sm">
-                              Document Ready
-                            </p>
-                            <p className="text-white/80 text-xs">
-                              Your PDF has been generated successfully
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Content */}
-                      <div className="p-4 space-y-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-foreground text-sm truncate">
-                              {msg.pdfAttachment.name}
-                            </p>
-                            <div className="flex items-center gap-2 mt-1.5">
-                              <span className="px-2 py-0.5 bg-brand/10 text-brand rounded-full text-xs font-medium">
-                                PDF
-                              </span>
-                              <span className="text-xs text-muted-foreground">
-                                {formatFileSize(msg.pdfAttachment.size)}
-                              </span>
-                              <span className="text-xs text-muted-foreground">•</span>
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(msg.pdfAttachment.createdAt).toLocaleDateString()}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Download Button */}
-                        <Button
-                          className="w-full bg-brand hover:bg-brand/90 text-white shadow-md hover:shadow-lg transition-all"
-                          onClick={() => {
-                            const link = document.createElement('a');
-                            link.href = msg.pdfAttachment!.downloadUrl;
-                            link.download = msg.pdfAttachment!.name;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                          }}
-                        >
-                          <HugeiconsIcon icon={Download01Icon} size={18} />
-                          Download PDF
-                        </Button>
-                      </div>
-                    </Card>
-                  )}
-
-                  {/* Normal Message with PDF Attachment */}
-                  {msg.type === "normal-with-pdf" && (
-                    <div className="max-w-[80%] space-y-3">
-                      {/* AI Message */}
-                      <Card className="p-4 bg-muted">
-                        <MarkdownRenderer content={msg.content} />
+                // Render message content based on type
+                const renderMessageContent = () => {
+                  if (msg.role === "user") {
+                    return (
+                      <Card className="p-4 bg-brand text-white rounded-2xl rounded-tr-sm">
+                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                       </Card>
-                      
-                      {/* Beautiful PDF Card */}
-                      {msg.pdfAttachment && (
-                        <Card className="overflow-hidden border-2 border-brand/20 bg-gradient-to-br from-brand/5 to-purple-50 shadow-lg hover:shadow-xl transition-shadow">
-                          {/* Header with gradient */}
-                          <div className="bg-gradient-to-r from-brand to-purple-600 p-4">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
-                                <HugeiconsIcon icon={File02Icon} size={24} className="text-white" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-white text-sm">
-                                  Document Ready
-                                </p>
-                                <p className="text-white/80 text-xs">
-                                  Your PDF has been generated successfully
-                                </p>
+                    );
+                  }
+
+                  // Assistant messages - switch on type
+                  switch (msg.type) {
+                    case "error":
+                      return (
+                        <div className="p-4 border border-red-300 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-2xl rounded-tl-sm flex items-start gap-3">
+                          <HugeiconsIcon icon={AlertIcon} size={20} className="flex-shrink-0 mt-0.5" />
+                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        </div>
+                      );
+
+                    case "loading":
+                      return (
+                        <Card className="p-4 bg-muted border-brand/30 rounded-2xl rounded-tl-sm">
+                          <div className="flex items-center gap-3">
+                            <HugeiconsIcon 
+                              icon={Loading02Icon} 
+                              size={20} 
+                              className="text-brand animate-spin" 
+                            />
+                            <div className="space-y-2">
+                              <p className="text-sm text-muted-foreground">
+                                Processing your request...
+                              </p>
+                              <div className="flex gap-1">
+                                <div className="w-2 h-2 bg-brand rounded-full animate-bounce" />
+                                <div className="w-2 h-2 bg-brand rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
+                                <div className="w-2 h-2 bg-brand rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
                               </div>
                             </div>
-                          </div>
-
-                          {/* Content */}
-                          <div className="p-4 space-y-3">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-foreground text-sm truncate">
-                                  {msg.pdfAttachment.name}
-                                </p>
-                                <div className="flex items-center gap-2 mt-1.5">
-                                  <span className="px-2 py-0.5 bg-brand/10 text-brand rounded-full text-xs font-medium">
-                                    PDF
-                                  </span>
-                                  <span className="text-xs text-muted-foreground">
-                                    {formatFileSize(msg.pdfAttachment.size)}
-                                  </span>
-                                  <span className="text-xs text-muted-foreground">•</span>
-                                  <span className="text-xs text-muted-foreground">
-                                    {new Date(msg.pdfAttachment.createdAt).toLocaleDateString()}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Download Button */}
-                            <Button
-                              className="w-full bg-brand hover:bg-brand/90 text-white shadow-md hover:shadow-lg transition-all"
-                              onClick={() => {
-                                const link = document.createElement('a');
-                                link.href = msg.pdfAttachment!.downloadUrl;
-                                link.download = msg.pdfAttachment!.name;
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                              }}
-                            >
-                              <HugeiconsIcon icon={Download01Icon} size={18} />
-                              Download PDF
-                            </Button>
                           </div>
                         </Card>
-                      )}
-                    </div>
-                  )}
+                      );
 
-                  {/* Normal Message */}
-                  {msg.type === "normal" && (
-                    <Card
-                      className={`max-w-[80%] p-4 ${
-                        msg.role === "user"
-                          ? "bg-brand text-white"
-                          : "bg-muted"
-                      }`}
-                    >
-                      {msg.role === "user" ? (
-                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                      ) : (
-                        <>
-                          <MarkdownRenderer 
-                            content={msg.content} 
-                            isStreaming={isStreaming && messages[messages.length - 1]?.id === msg.id}
-                          />
-                          {!msg.content && isStreaming && messages[messages.length - 1]?.id === msg.id && (
+                    case "pdf":
+                      return msg.pdf ? <PDFCard pdf={msg.pdf} /> : null;
+
+                    case "normal-with-pdf":
+                      return (
+                        <div className="space-y-3">
+                          {msg.content && (
+                            <Card className="p-4 bg-muted rounded-2xl rounded-tl-sm">
+                              <MarkdownRenderer content={msg.content} />
+                            </Card>
+                          )}
+                          {msg.pdf && <PDFCard pdf={msg.pdf} />}
+                        </div>
+                      );
+
+                    case "normal":
+                    default:
+                      return (
+                        <Card className="p-4 bg-muted rounded-2xl rounded-tl-sm">
+                          {msg.content ? (
+                            <MarkdownRenderer content={msg.content} />
+                          ) : (
                             <span className="inline-block w-2 h-4 bg-muted-foreground animate-pulse" />
                           )}
-                        </>
-                      )}
-                    </Card>
-                  )}
-                </div>
-              ))}
+                        </Card>
+                      );
+                  }
+                };
+
+                return (
+                  <div
+                    key={msg.id}
+                    className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}
+                  >
+                    {/* Avatar */}
+                    {msg.role === "user" ? (
+                      <Avatar className="h-9 w-9 flex-shrink-0">
+                        <AvatarFallback className="bg-brand/20 text-brand text-xs font-medium">
+                          {userInitials}
+                        </AvatarFallback>
+                      </Avatar>
+                    ) : (
+                      <div className="h-9 w-9 flex-shrink-0 rounded-full bg-brand flex items-center justify-center">
+                        <HugeiconsIcon icon={Robot02Icon} size={20} className="text-white" />
+                      </div>
+                    )}
+
+                    {/* Message with name */}
+                    <div className={`flex flex-col gap-1 max-w-[75%] ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                      <span className="text-xs font-medium text-muted-foreground px-1">
+                        {msg.role === "user" ? session?.user?.name || "You" : "Tatenda"}
+                      </span>
+                      {renderMessageContent()}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
 
@@ -570,7 +433,7 @@ export default function SpeakPage() {
                 <article className="flex flex-row gap-1 mb-1 items-center">
                   <HugeiconsIcon icon={AlertCircle} color="oklch(79.5% 0.184 86.047)" />
                   <p className="font-semibold text-muted-foreground text-yellow-500">Memory active</p>
-                </article> This chat will remember your previous setMessages
+                </article> This chat will remember your previous messages
               </div>
             </Card>
           )}
@@ -608,12 +471,12 @@ export default function SpeakPage() {
                   onKeyPress={handleKeyPress}
                   placeholder="Type your message..."
                   className="pr-12 h-12 rounded-full border-2 focus-visible:ring-brand"
-                  disabled={isStreaming}
+                  disabled={isLoading}
                 />
                 <Button
                   size="icon"
                   onClick={handleSendMessage}
-                  disabled={!message.trim() || isStreaming}
+                  disabled={!message.trim() || isLoading}
                   className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full w-10 h-10 bg-brand hover:bg-brand/90 disabled:opacity-50"
                 >
                   <HugeiconsIcon icon={ArrowRight01Icon} size={20} />
@@ -625,5 +488,57 @@ export default function SpeakPage() {
       </div>
     </div>
     </>
+  );
+}
+
+// PDF Card Component
+function PDFCard({ pdf }: { pdf: PDFAttachment }) {
+  return (
+    <Card className="overflow-hidden border border-brand/30 bg-gradient-to-br from-brand/5 via-purple-50/50 to-background dark:from-brand/10 dark:via-purple-950/20 dark:to-background shadow-lg hover:shadow-xl transition-all duration-300 rounded-2xl">
+      {/* Compact header */}
+      <div className="bg-gradient-to-r from-brand via-purple-600 to-brand p-3">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 bg-white/20 backdrop-blur-sm rounded-lg">
+            <HugeiconsIcon icon={File02Icon} size={18} className="text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-white text-xs">
+              PDF Generated
+            </p>
+          </div>
+          <span className="px-2 py-0.5 bg-white/20 backdrop-blur-sm text-white rounded-full text-[10px] font-medium">
+            {pdf.size}
+          </span>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-3 space-y-2.5">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 bg-red-100 dark:bg-red-950/30 rounded">
+            <HugeiconsIcon icon={File02Icon} size={16} className="text-red-600 dark:text-red-400" />
+          </div>
+          <p className="font-medium text-foreground text-sm truncate flex-1">
+            {pdf.name}
+          </p>
+        </div>
+
+        {/* Download Button */}
+        <Button
+          className="w-full bg-brand hover:bg-brand/90 text-white shadow-md hover:shadow-lg transition-all h-9 text-sm gap-2"
+          onClick={() => {
+            const link = document.createElement('a');
+            link.href = pdf.url;
+            link.download = pdf.name;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }}
+        >
+          <HugeiconsIcon icon={Download01Icon} size={16} />
+          Download
+        </Button>
+      </div>
+    </Card>
   );
 }

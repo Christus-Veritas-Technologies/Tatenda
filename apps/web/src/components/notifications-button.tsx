@@ -5,13 +5,13 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Notification03Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { useRouter } from "next/navigation";
 
 interface Notification {
@@ -54,8 +54,8 @@ export function NotificationsButton() {
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger render={
+    <Sheet>
+      <SheetTrigger render={
         <Button variant="secondary" size="icon" className="relative">
           <HugeiconsIcon icon={Notification03Icon} size={20} strokeWidth={1.5} />
           {unreadCount > 0 && (
@@ -65,32 +65,41 @@ export function NotificationsButton() {
           )}
         </Button>
       } />
-      <DropdownMenuContent align="end" className="w-80">
-        <DropdownMenuLabel>Notifications</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        {isLoading ? (
-          <div className="p-4 text-center text-sm text-muted-foreground">
-            Loading...
-          </div>
-        ) : notifications.length === 0 ? (
-          <div className="p-4 text-center text-sm text-muted-foreground">
-            No notifications yet
-          </div>
-        ) : (
-          notifications.map((notification) => (
-            <DropdownMenuItem
-              key={notification.id}
-              className="cursor-pointer flex flex-col gap-1"
-              onClick={() => handleNotificationClick(notification)}
-            >
-              <p className="text-sm">{notification.text}</p>
-              <p className="text-xs text-muted-foreground">
-                {new Date(notification.createdAt).toLocaleDateString()}
-              </p>
-            </DropdownMenuItem>
-          ))
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+      <SheetContent side="right" className="w-96">
+        <SheetHeader>
+          <SheetTitle>Notifications</SheetTitle>
+          <SheetDescription>
+            {notifications.length === 0 
+              ? "You have no notifications" 
+              : `You have ${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}`
+            }
+          </SheetDescription>
+        </SheetHeader>
+        <div className="mt-6 space-y-4">
+          {isLoading ? (
+            <div className="p-4 text-center text-sm text-muted-foreground">
+              Loading...
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="p-4 text-center text-sm text-muted-foreground">
+              No notifications yet
+            </div>
+          ) : (
+            notifications.map((notification) => (
+              <div
+                key={notification.id}
+                className="p-4 rounded-lg border bg-card hover:bg-accent cursor-pointer transition-colors"
+                onClick={() => handleNotificationClick(notification)}
+              >
+                <p className="text-sm font-medium">{notification.text}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {new Date(notification.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+            ))
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 }

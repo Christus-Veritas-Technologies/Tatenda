@@ -4,7 +4,7 @@ model User {
   email         String
   emailVerified Boolean   @default(false)
   image         String?
-  plan          String    @default("free") // free, student, pro
+  credits       Int       @default(5)
   
   // Onboarding fields
   age           Int?

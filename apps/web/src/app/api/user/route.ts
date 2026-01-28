@@ -35,16 +35,8 @@ export async function GET(request: Request) {
       );
     }
 
-    // Calculate credits remaining based on plan
-    const creditsPerPlan = {
-      free: 0,
-      student: 10,
-      pro: 100,
-    };
-
-    const totalCredits = creditsPerPlan[user.plan as keyof typeof creditsPerPlan] || 0;
-    const creditsUsed = user.projects.length;
-    const creditsRemaining = Math.max(0, totalCredits - creditsUsed);
+    // Get credits from database
+    const creditsRemaining = user.credits;
 
     return Response.json(
       {
@@ -53,12 +45,10 @@ export async function GET(request: Request) {
           name: user.name,
           email: user.email,
           image: user.image,
-          plan: user.plan,
+          credits: user.credits,
         },
         projects: user.projects,
         credits: {
-          total: totalCredits,
-          used: creditsUsed,
           remaining: creditsRemaining,
         },
       },

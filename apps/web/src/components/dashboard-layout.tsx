@@ -9,6 +9,7 @@ import {
   Settings02Icon,
   Robot02Icon,
   Search01Icon,
+  CoinsIcon,
 } from "@hugeicons/core-free-icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -27,6 +28,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { NotificationsButton } from "@/components/notifications-button";
 import UserMenu from "@/components/user-menu";
 
@@ -141,6 +143,19 @@ export function AppSidebar() {
               )}
             </SidebarMenu>
           </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Purchase Credits Button */}
+        <SidebarGroup className="mt-auto">
+          <div className="pb-4">
+            <Button 
+              className="w-full bg-brand hover:bg-brand/90 text-white"
+              onClick={() => window.location.href = '/dashboard/billing' as any}
+            >
+              <HugeiconsIcon icon={CoinsIcon} size={18} strokeWidth={1.5} />
+              <span>Purchase More Credits</span>
+            </Button>
+          </div>
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>

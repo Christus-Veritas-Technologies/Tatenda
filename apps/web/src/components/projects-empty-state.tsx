@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import { Card } from "./ui/card";
+import { useRouter } from "next/navigation";
 
 interface ProjectsEmptyStateProps {
   onCreateProject?: () => void;
@@ -14,6 +15,8 @@ export function ProjectsEmptyState({
   creditsRemaining,
 }: ProjectsEmptyStateProps) {
   const hasCredits = creditsRemaining > 0;
+
+  const router = useRouter();
 
   return (
     <Card className="flex flex-col mt-12 items-center justify-center self-center justify-self-center pt-0 w-fit">
@@ -37,14 +40,25 @@ export function ProjectsEmptyState({
           : "You've used all your available credits. Upgrade your plan to create more projects."}
       </p>
        </article>
-        <Button 
-            size="lg" 
-            onClick={onCreateProject}
-            disabled={!hasCredits}
-            className="py-6"
+        {
+          hasCredits ? (
+            <Button 
+              size="lg" 
+              onClick={onCreateProject}
+              disabled={!hasCredits}
             >
-          Generate Your First Project
-        </Button>
+              Generate Your First Project
+            </Button>
+          ) : (
+            <Button
+              onClick={() => {
+                router.push("/packages")
+              }}
+            >
+              Purchase more credits
+            </Button>
+          )
+        }
       </article>
     </Card>
   );

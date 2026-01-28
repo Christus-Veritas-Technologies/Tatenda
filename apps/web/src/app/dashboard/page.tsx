@@ -46,7 +46,7 @@ export default async function DashboardPage() {
 
   return (
     <DashboardLayout creditsRemaining={creditsRemaining}>
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold text-foreground">Projects</h1>

@@ -152,8 +152,8 @@ export function DashboardLayout({ children, creditsRemaining }: { children: Reac
     <SidebarProvider>
       <div className="flex min-h-screen w-full bg-muted/30">
         <AppSidebar />
-        <main className="flex-1 bg-white m-2 rounded-lg">
-          <div className="border-b bg-background rounded-lg">
+        <main className="flex-1 bg-white m-2 rounded-lg border border-muted">
+          <div className="bg-background rounded-lg">
             <div className="flex h-16 items-center justify-between px-4">
               <SidebarTrigger />
               <div className="flex items-center gap-3">

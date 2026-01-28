@@ -83,16 +83,17 @@ export default function PackagesPage() {
                   delay: index * 0.4,
                   ease: "easeOut"
                 }}
+                className="overflow-visible"
               >
                 <Card
                   className={cn(
-                    "relative p-8 flex flex-col h-full",
+                    "relative p-8 flex flex-col h-full overflow-visible",
                     isPopular && "border-brand border-2 bg-brand text-white shadow-xl scale-105"
                   )}
                 >
                   {/* Best Value Badge */}
                   {isPopular && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <div className="absolute border border-brand rounded-full -top-3 left-1/2 -translate-x-1/2 z-10">
                       <div className="bg-white text-brand px-4 py-1 rounded-full text-sm font-semibold">
                         Best Value
                       </div>

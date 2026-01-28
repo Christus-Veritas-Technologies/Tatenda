@@ -24,6 +24,8 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { NotificationsButton } from "@/components/notifications-button";
+import { UserMenu } from "@/components/user-menu";
 
 const menuItems = [
   {
@@ -61,12 +63,12 @@ export function AppSidebar() {
       <SidebarContent>
         {/* Logo/Brand */}
         <SidebarGroup>
-          <div className="flex items-center gap-2 px-4 py-2">
-            <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center">
+          <div className="flex items-center gap-2 px-4 py-4">
+            <div className="w-8 h-8 rounded-lg bg-brand flex items-center justify-center">
               <HugeiconsIcon
                 icon={Robot02Icon}
                 size={20}
-                color="#7148FC"
+                color="#ffffff"
                 strokeWidth={1.5}
               />
             </div>
@@ -76,7 +78,6 @@ export function AppSidebar() {
 
         {/* Navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => {
@@ -113,11 +114,15 @@ export function DashboardLayout({ children, creditsRemaining }: { children: Reac
           <div className="border-b bg-background">
             <div className="flex h-16 items-center justify-between px-4">
               <SidebarTrigger />
-              {creditsRemaining !== undefined && (
-                <div className="bg-brand/10 text-brand px-3 py-1 rounded-full text-sm font-medium">
-                  {creditsRemaining} credits left
-                </div>
-              )}
+              <div className="flex items-center gap-3">
+                {creditsRemaining !== undefined && (
+                  <div className="bg-brand/10 text-brand px-3 py-1 rounded-full text-sm font-medium">
+                    {creditsRemaining} credits left
+                  </div>
+                )}
+                <NotificationsButton />
+                <UserMenu />
+              </div>
             </div>
           </div>
           <div className="flex-1 p-6">{children}</div>

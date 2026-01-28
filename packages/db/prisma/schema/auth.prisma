@@ -20,6 +20,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   projects      Project[]
+  notifications Notification[]
 
   @@unique([email])
   @@map("user")
@@ -86,4 +87,19 @@ model Project {
 
   @@index([userId])
   @@map("project")
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  text        String
+  status      String   // unread, read, archived
+  triggerLink String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@map("notification")
 }

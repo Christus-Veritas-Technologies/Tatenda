@@ -104,15 +104,20 @@ export function AppSidebar() {
   );
 }
 
-export function DashboardLayout({ children }: { children: React.ReactNode }) {
+export function DashboardLayout({ children, creditsRemaining }: { children: React.ReactNode; creditsRemaining?: number }) {
   return (
     <SidebarProvider>
       <div className="flex min-h-screen w-full">
         <AppSidebar />
         <main className="flex-1">
           <div className="border-b bg-background">
-            <div className="flex h-16 items-center px-4">
+            <div className="flex h-16 items-center justify-between px-4">
               <SidebarTrigger />
+              {creditsRemaining !== undefined && (
+                <div className="bg-brand/10 text-brand px-3 py-1 rounded-full text-sm font-medium">
+                  {creditsRemaining} credits left
+                </div>
+              )}
             </div>
           </div>
           <div className="flex-1 p-6">{children}</div>

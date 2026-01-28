@@ -328,10 +328,11 @@ export default function OnboardingPage() {
                         <Button
                           key={source}
                           type="button"
-                          variant={
+                          variant="outline"
+                          className={
                             data.referralSources.includes(source)
-                              ? "default"
-                              : "outline"
+                              ? "border-purple-500 text-purple-500"
+                              : ""
                           }
                           onClick={() => {
                             setData((prev) => {

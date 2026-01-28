@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { DashboardLayout } from "@/components/dashboard-layout";
+import db from "@tatenda/db";
 
 export default async function SettingsPage() {
   const session = await authClient.getSession({
@@ -12,11 +13,31 @@ export default async function SettingsPage() {
   });
 
   if (!session?.user) {
-    redirect("/login");
+    redirect("/login" as any);
   }
 
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    include: {
+      projects: true,
+    },
+  });
+
+  if (!user) {
+    redirect("/login" as any);
+  }
+
+  const creditsPerPlan = {
+    free: 0,
+    student: 10,
+    pro: 100,
+  };
+
+  const totalCredits = creditsPerPlan[user.plan as keyof typeof creditsPerPlan] || 0;
+  const creditsRemaining = Math.max(0, totalCredits - user.projects.length);
+
   return (
-    <DashboardLayout>
+    <DashboardLayout creditsRemaining={creditsRemaining}>
       <div>
         <h1 className="text-3xl font-bold text-foreground">Settings</h1>
         <p className="text-muted-foreground mt-2">Configure your application settings.</p>

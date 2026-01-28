@@ -3,9 +3,9 @@ import { redirect } from "next/navigation";
 
 import { authClient } from "@/lib/auth-client";
 import { DashboardLayout } from "@/components/dashboard-layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { FileScriptIcon, CoinsIcon, SparklesIcon } from "@hugeicons/core-free-icons";
+import { ProjectCard } from "@/components/project-card";
+import { ProjectsEmptyState } from "@/components/projects-empty-state";
+import db from "@tatenda/db";
 
 export default async function DashboardPage() {
   const session = await authClient.getSession({
@@ -16,151 +16,66 @@ export default async function DashboardPage() {
   });
 
   if (!session?.user) {
-    redirect("/login");
+    redirect("/login" as any);
   }
 
-  // Mock data - replace with actual user data from database
-  const stats = {
-    projectsGenerated: 3,
-    creditsLeft: 7,
-    totalCredits: 10,
-    plan: "Student",
+  // Fetch user with projects
+  const user = await db.user.findUnique({
+    where: { id: session.user.id },
+    include: {
+      projects: {
+        orderBy: { createdAt: "desc" },
+      },
+    },
+  });
+
+  if (!user) {
+    redirect("/login" as any);
+  }
+
+  // Calculate credits
+  const creditsPerPlan = {
+    free: 0,
+    student: 10,
+    pro: 100,
   };
 
+  const totalCredits = creditsPerPlan[user.plan as keyof typeof creditsPerPlan] || 0;
+  const creditsUsed = user.projects.length;
+  const creditsRemaining = Math.max(0, totalCredits - creditsUsed);
+
   return (
-    <DashboardLayout>
+    <DashboardLayout creditsRemaining={creditsRemaining}>
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
+          <h1 className="text-3xl font-bold text-foreground">Projects</h1>
           <p className="text-muted-foreground mt-2">
-            Welcome back, {session.user.name}! Here's an overview of your Tatenda account.
+            All your ZIMSEC SBA projects in one place
           </p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-3">
-          {/* Projects Generated */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Projects Generated
-              </CardTitle>
-              <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center">
-                <HugeiconsIcon
-                  icon={FileScriptIcon}
-                  size={24}
-                  color="#7148FC"
-                  strokeWidth={1.5}
-                />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.projectsGenerated}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                ZIMSEC SBA projects created
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Credits Left */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Credits Remaining
-              </CardTitle>
-              <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                <HugeiconsIcon
-                  icon={CoinsIcon}
-                  size={24}
-                  color="#f59e0b"
-                  strokeWidth={1.5}
-                />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {stats.creditsLeft} / {stats.totalCredits}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Projects you can still create
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Current Plan */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Current Plan
-              </CardTitle>
-              <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                <HugeiconsIcon
-                  icon={SparklesIcon}
-                  size={24}
-                  color="#10b981"
-                  strokeWidth={1.5}
-                />
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.plan}</div>
-              <p className="text-xs text-muted-foreground mt-1">
-                10 projects for $5/month
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Recent Activity */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>
-              Your latest project generations and activities
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
-                <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center">
-                  <HugeiconsIcon
-                    icon={FileScriptIcon}
-                    size={20}
-                    color="#7148FC"
-                    strokeWidth={1.5}
-                  />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-foreground">
-                    Combined Science Project: Bilharzia Prevention
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Generated 2 hours ago
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
-                <div className="w-10 h-10 rounded-lg bg-brand/10 flex items-center justify-center">
-                  <HugeiconsIcon
-                    icon={FileScriptIcon}
-                    size={20}
-                    color="#7148FC"
-                    strokeWidth={1.5}
-                  />
-                </div>
-                <div className="flex-1">
-                  <p className="font-medium text-foreground">
-                    Mathematics Project: Statistics Analysis
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Generated yesterday
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Projects Grid or Empty State */}
+        {user.projects.length === 0 ? (
+          <ProjectsEmptyState creditsRemaining={creditsRemaining} />
+        ) : (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {user.projects.map((project) => (
+              <ProjectCard
+                key={project.id}
+                id={project.id}
+                title={project.title}
+                description={project.description || undefined}
+                subject={project.subject || undefined}
+                createdAt={project.createdAt}
+                onView={(id) => {
+                  // TODO: Navigate to project view
+                  console.log("View project:", id);
+                }}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

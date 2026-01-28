@@ -55,14 +55,16 @@ export function NotificationsButton() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="secondary" size="icon" className="relative" />}>
-        <HugeiconsIcon icon={Notification03Icon} size={20} strokeWidth={1.5} />
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-brand text-white text-xs font-semibold rounded-full w-5 h-5 flex items-center justify-center">
-            {unreadCount}
-          </span>
-        )}
-      </DropdownMenuTrigger>
+      <DropdownMenuTrigger render={
+        <Button variant="secondary" size="icon" className="relative">
+          <HugeiconsIcon icon={Notification03Icon} size={20} strokeWidth={1.5} />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-brand text-white text-xs font-semibold rounded-full w-5 h-5 flex items-center justify-center">
+              {unreadCount}
+            </span>
+          )}
+        </Button>
+      } />
       <DropdownMenuContent align="end" className="w-80">
         <DropdownMenuLabel>Notifications</DropdownMenuLabel>
         <DropdownMenuSeparator />

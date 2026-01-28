@@ -25,7 +25,7 @@ import {
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { NotificationsButton } from "@/components/notifications-button";
-import { UserMenu } from "@/components/user-menu";
+import UserMenu from "@/components/user-menu";
 
 const menuItems = [
   {

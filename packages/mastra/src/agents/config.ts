@@ -32,8 +32,8 @@ export const TATENDA_AGENT_CONFIG = {
  * Model configurations for different plan tiers
  */
 export const TATENDA_MODELS = {
-  free: "openai/gpt-5-mini",
-  pro: "openai/gpt-5.2",
+  free: "openai/gpt-4o",
+  pro: "openai/gpt-4o",
 } as const;
 
 /**
@@ -55,8 +55,8 @@ export const TATENDA_REALTIME_CONFIG = {
  * Realtime audio model configurations
  */
 export const TATENDA_REALTIME_MODELS = {
-  free: "openai/gpt-5-mini-realtime",
-  pro: "openai/gpt-5.2-realtime",
+  free: "openai/gpt-4o-realtime",
+  pro: "openai/gpt-4o-realtime",
 } as const;
 
 /**

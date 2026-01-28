@@ -8,6 +8,7 @@ import { Agent } from "@mastra/core/agent";
 import { TATENDA_REALTIME_CONFIG, TATENDA_REALTIME_MODELS } from "../config";
 import { SecurityGuardrail } from "../../processors/security-guardrail";
 import { OffTopicGuardrail } from "../../processors/off-topic-guardrail";
+import { memory } from "../../storage";
 
 export const tatendaRealtimeProAgent = new Agent({
   ...TATENDA_REALTIME_CONFIG,
@@ -15,4 +16,5 @@ export const tatendaRealtimeProAgent = new Agent({
   instructions: TATENDA_REALTIME_CONFIG.instructions,
   model: TATENDA_REALTIME_MODELS.pro,
   inputProcessors: [new SecurityGuardrail(), new OffTopicGuardrail()],
+  memory,
 });

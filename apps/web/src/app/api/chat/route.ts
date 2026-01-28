@@ -70,12 +70,41 @@ export async function POST(request: Request) {
 
     // Create a ReadableStream from the agent's textStream
     const encoder = new TextEncoder();
+    let toolCallResults: any[] = [];
+    
     const readableStream = new ReadableStream({
       async start(controller) {
         try {
-          for await (const chunk of stream.textStream) {
-            controller.enqueue(encoder.encode(chunk));
+          // Listen for tool calls
+          for await (const chunk of stream.fullStream) {
+            // Check if this chunk contains tool results
+            if (chunk.type === 'tool-result') {
+              toolCallResults.push(chunk);
+            }
           }
+
+          // Stream the text response
+          for await (const textChunk of stream.textStream) {
+            controller.enqueue(encoder.encode(textChunk));
+          }
+
+          // If PDF was generated, append PDF metadata as JSON
+          const pdfToolResult = toolCallResults.find(
+            (result: any) => result.toolName === 'generatePDF' && result.result?.success
+          );
+
+          if (pdfToolResult?.result) {
+            const pdfData = pdfToolResult.result;
+            const pdfMetadata = JSON.stringify({
+              __PDF_ATTACHMENT__: true,
+              fileName: pdfData.fileName,
+              fileSize: pdfData.fileSize,
+              downloadUrl: pdfData.downloadUrl,
+              createdAt: pdfData.createdAt,
+            });
+            controller.enqueue(encoder.encode(`\n\n${pdfMetadata}`));
+          }
+
           controller.close();
         } catch (error) {
           console.error("[Chat] Streaming error:", error);

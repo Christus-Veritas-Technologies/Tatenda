@@ -149,6 +149,36 @@ export default function SpeakPage() {
           
           if (done) {
             setIsStreaming(false);
+            
+            // Check if response contains PDF metadata
+            const pdfMatch = accumulatedText.match(/\n\n(\{\"__PDF_ATTACHMENT__\":true,.+\})$/);
+            if (pdfMatch) {
+              try {
+                const pdfData = JSON.parse(pdfMatch[1]);
+                const textContent = accumulatedText.replace(pdfMatch[0], "").trim();
+                
+                setMessages((prev) => 
+                  prev.map((msg) => 
+                    msg.id === messageId 
+                      ? { 
+                          ...msg, 
+                          content: textContent,
+                          type: "normal-with-pdf" as MessageType,
+                          pdfAttachment: {
+                            name: pdfData.fileName,
+                            size: pdfData.fileSize,
+                            createdAt: new Date(pdfData.createdAt),
+                            downloadUrl: pdfData.downloadUrl,
+                          }
+                        }
+                      : msg
+                  )
+                );
+              } catch (e) {
+                console.error("[Chat] Failed to parse PDF metadata:", e);
+              }
+            }
+            
             // Refetch thread data to update message count
             refetchThreadData();
             break;
@@ -157,11 +187,12 @@ export default function SpeakPage() {
           const chunk = decoder.decode(value, { stream: true });
           accumulatedText += chunk;
 
-          // Update the message with accumulated text
+          // Update the message with accumulated text (excluding PDF metadata if present)
+          const displayText = accumulatedText.replace(/\n\n\{\"__PDF_ATTACHMENT__\":true,.+\}$/, "");
           setMessages((prev) => 
             prev.map((msg) => 
               msg.id === messageId 
-                ? { ...msg, content: accumulatedText }
+                ? { ...msg, content: displayText }
                 : msg
             )
           );
@@ -373,30 +404,49 @@ export default function SpeakPage() {
 
                   {/* PDF Attachment Only */}
                   {msg.type === "pdf" && msg.pdfAttachment && (
-                    <Card className="max-w-[80%] p-4 bg-muted border-brand/20">
-                      <div className="flex items-start gap-4">
-                        <div className="p-3 bg-brand/10 rounded-lg">
-                          <HugeiconsIcon icon={File02Icon} size={28} className="text-brand" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-foreground truncate">
-                            {msg.pdfAttachment.name}
-                          </p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                            <span className="px-1.5 py-0.5 bg-brand/10 text-brand rounded text-xs font-medium">
-                              PDF
-                            </span>
-                            <span>{formatFileSize(msg.pdfAttachment.size)}</span>
-                            <span>•</span>
-                            <span>
-                              {new Date(msg.pdfAttachment.createdAt).toLocaleDateString()}
-                            </span>
+                    <Card className="max-w-[80%] overflow-hidden border-2 border-brand/20 bg-gradient-to-br from-brand/5 to-purple-50 shadow-lg hover:shadow-xl transition-shadow">
+                      {/* Header with gradient */}
+                      <div className="bg-gradient-to-r from-brand to-purple-600 p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
+                            <HugeiconsIcon icon={File02Icon} size={24} className="text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-white text-sm">
+                              Document Ready
+                            </p>
+                            <p className="text-white/80 text-xs">
+                              Your PDF has been generated successfully
+                            </p>
                           </div>
                         </div>
+                      </div>
+
+                      {/* Content */}
+                      <div className="p-4 space-y-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-foreground text-sm truncate">
+                              {msg.pdfAttachment.name}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <span className="px-2 py-0.5 bg-brand/10 text-brand rounded-full text-xs font-medium">
+                                PDF
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {formatFileSize(msg.pdfAttachment.size)}
+                              </span>
+                              <span className="text-xs text-muted-foreground">•</span>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(msg.pdfAttachment.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Download Button */}
                         <Button
-                          size="sm"
-                          variant="outline"
-                          className="flex items-center gap-2 text-brand border-brand/30 hover:bg-brand/10"
+                          className="w-full bg-brand hover:bg-brand/90 text-white shadow-md hover:shadow-lg transition-all"
                           onClick={() => {
                             const link = document.createElement('a');
                             link.href = msg.pdfAttachment!.downloadUrl;
@@ -406,8 +456,8 @@ export default function SpeakPage() {
                             document.body.removeChild(link);
                           }}
                         >
-                          <HugeiconsIcon icon={Download01Icon} size={16} />
-                          Download
+                          <HugeiconsIcon icon={Download01Icon} size={18} />
+                          Download PDF
                         </Button>
                       </div>
                     </Card>
@@ -416,34 +466,56 @@ export default function SpeakPage() {
                   {/* Normal Message with PDF Attachment */}
                   {msg.type === "normal-with-pdf" && (
                     <div className="max-w-[80%] space-y-3">
+                      {/* AI Message */}
                       <Card className="p-4 bg-muted">
                         <MarkdownRenderer content={msg.content} />
                       </Card>
+                      
+                      {/* Beautiful PDF Card */}
                       {msg.pdfAttachment && (
-                        <Card className="p-4 bg-muted/50 border-brand/20">
-                          <div className="flex items-start gap-4">
-                            <div className="p-3 bg-brand/10 rounded-lg">
-                              <HugeiconsIcon icon={File02Icon} size={28} className="text-brand" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-foreground truncate">
-                                {msg.pdfAttachment.name}
-                              </p>
-                              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                                <span className="px-1.5 py-0.5 bg-brand/10 text-brand rounded text-xs font-medium">
-                                  PDF
-                                </span>
-                                <span>{formatFileSize(msg.pdfAttachment.size)}</span>
-                                <span>•</span>
-                                <span>
-                                  {new Date(msg.pdfAttachment.createdAt).toLocaleDateString()}
-                                </span>
+                        <Card className="overflow-hidden border-2 border-brand/20 bg-gradient-to-br from-brand/5 to-purple-50 shadow-lg hover:shadow-xl transition-shadow">
+                          {/* Header with gradient */}
+                          <div className="bg-gradient-to-r from-brand to-purple-600 p-4">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-white/20 backdrop-blur-sm rounded-lg">
+                                <HugeiconsIcon icon={File02Icon} size={24} className="text-white" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-white text-sm">
+                                  Document Ready
+                                </p>
+                                <p className="text-white/80 text-xs">
+                                  Your PDF has been generated successfully
+                                </p>
                               </div>
                             </div>
+                          </div>
+
+                          {/* Content */}
+                          <div className="p-4 space-y-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-foreground text-sm truncate">
+                                  {msg.pdfAttachment.name}
+                                </p>
+                                <div className="flex items-center gap-2 mt-1.5">
+                                  <span className="px-2 py-0.5 bg-brand/10 text-brand rounded-full text-xs font-medium">
+                                    PDF
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {formatFileSize(msg.pdfAttachment.size)}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">•</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {new Date(msg.pdfAttachment.createdAt).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Download Button */}
                             <Button
-                              size="sm"
-                              variant="outline"
-                              className="flex items-center gap-2 text-brand border-brand/30 hover:bg-brand/10"
+                              className="w-full bg-brand hover:bg-brand/90 text-white shadow-md hover:shadow-lg transition-all"
                               onClick={() => {
                                 const link = document.createElement('a');
                                 link.href = msg.pdfAttachment!.downloadUrl;
@@ -453,8 +525,8 @@ export default function SpeakPage() {
                                 document.body.removeChild(link);
                               }}
                             >
-                              <HugeiconsIcon icon={Download01Icon} size={16} />
-                              Download
+                              <HugeiconsIcon icon={Download01Icon} size={18} />
+                              Download PDF
                             </Button>
                           </div>
                         </Card>

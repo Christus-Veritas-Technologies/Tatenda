@@ -5,6 +5,16 @@ model User {
   emailVerified Boolean   @default(false)
   image         String?
   plan          String    @default("free") // free, student, pro
+  
+  // Onboarding fields
+  age           Int?
+  schoolLevel   String?   // primary, secondary
+  grade         String?
+  school        String?
+  city          String?
+  referralSources String[] @default([])
+  onboardingCompleted Boolean @default(false)
+  
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   sessions      Session[]

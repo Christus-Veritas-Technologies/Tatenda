@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { toast } from "sonner";
 import {
   UserIcon,
   SchoolIcon,
@@ -25,7 +26,7 @@ interface OnboardingData {
   grade: string;
   school: string;
   city: string;
-  referralSource: string;
+  referralSources: string[];
 }
 
 export default function OnboardingPage() {
@@ -38,8 +39,9 @@ export default function OnboardingPage() {
     grade: "",
     school: "",
     city: "",
-    referralSource: "",
+    referralSources: [],
   });
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleNext = () => {
     if (currentStep < 3) {
@@ -48,9 +50,30 @@ export default function OnboardingPage() {
   };
 
   const handleFinish = async () => {
-    // TODO: Save onboarding data to database
-    console.log("Onboarding data:", data);
-    router.push("/dashboard");
+    setIsSaving(true);
+    try {
+      const response = await fetch("/api/onboarding", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to save onboarding data");
+      }
+
+      toast.success("Onboarding completed successfully!");
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Onboarding error:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to complete onboarding"
+      );
+      setIsSaving(false);
+    }
   };
 
   const handleSkip = () => {
@@ -195,6 +218,7 @@ export default function OnboardingPage() {
 
                   <Button
                     className="w-full"
+                    size="lg"
                     onClick={handleNext}
                     disabled={!canProceedStep1}
                   >
@@ -261,6 +285,7 @@ export default function OnboardingPage() {
 
                   <Button
                     className="w-full"
+                    size="lg"
                     onClick={handleNext}
                     disabled={!canProceedStep2}
                   >
@@ -304,11 +329,21 @@ export default function OnboardingPage() {
                           key={source}
                           type="button"
                           variant={
-                            data.referralSource === source ? "default" : "outline"
+                            data.referralSources.includes(source)
+                              ? "default"
+                              : "outline"
                           }
-                          onClick={() =>
-                            setData({ ...data, referralSource: source })
-                          }
+                          onClick={() => {
+                            setData((prev) => {
+                              const isSelected = prev.referralSources.includes(source);
+                              return {
+                                ...prev,
+                                referralSources: isSelected
+                                  ? prev.referralSources.filter((s) => s !== source)
+                                  : [...prev.referralSources, source],
+                              };
+                            });
+                          }}
                         >
                           {source}
                         </Button>
@@ -321,11 +356,16 @@ export default function OnboardingPage() {
                       variant="outline"
                       className="flex-1"
                       onClick={handleSkip}
+                      disabled={isSaving}
                     >
                       Skip
                     </Button>
-                    <Button className="flex-1" onClick={handleFinish}>
-                      Finish
+                    <Button
+                      className="flex-1"
+                      onClick={handleFinish}
+                      disabled={isSaving}
+                    >
+                      {isSaving ? "Saving..." : "Finish"}
                       <HugeiconsIcon icon={CheckmarkCircle01Icon} size={16} />
                     </Button>
                   </div>

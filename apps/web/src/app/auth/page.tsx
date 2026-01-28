@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient } from "@/lib/auth-client";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { AiMail01Icon, Robot02Icon, MailCheckIcon } from "@hugeicons/core-free-icons";
+import { AiMail01Icon, Robot02Icon, MailCheck } from "@hugeicons/core-free-icons";
 import { Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -79,23 +79,27 @@ export default function AuthPage() {
       >
         <Card className="relative overflow-hidden">
           <CardHeader className="text-center pb-6">
-            {/* Logo */}
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 rounded-xl bg-brand/10 flex items-center justify-center">
-                <HugeiconsIcon
-                  icon={Robot02Icon}
-                  size={40}
-                  color="#7148FC"
-                  strokeWidth={1.5}
-                />
-              </div>
-            </div>
-            <CardTitle className="text-2xl font-bold text-foreground">
-              Welcome to Tatenda
-            </CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Sign in to start creating your ZIMSEC projects
-            </CardDescription>
+            {!magicLinkSent && (
+              <>
+                {/* Logo */}
+                <div className="flex justify-center mb-4">
+                  <div className="w-16 h-16 rounded-xl bg-brand/10 flex items-center justify-center">
+                    <HugeiconsIcon
+                      icon={Robot02Icon}
+                      size={40}
+                      color="#7148FC"
+                      strokeWidth={1.5}
+                    />
+                  </div>
+                </div>
+                <CardTitle className="text-2xl font-bold text-foreground">
+                  Welcome to Tatenda
+                </CardTitle>
+                <CardDescription className="text-muted-foreground">
+                  Sign in to start creating your ZIMSEC projects
+                </CardDescription>
+              </>
+            )}
           </CardHeader>
 
           <CardContent>
@@ -109,7 +113,7 @@ export default function AuthPage() {
               >
                 <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-950 flex items-center justify-center mb-6">
                   <HugeiconsIcon
-                    icon={MailCheckIcon}
+                    icon={MailCheck}
                     size={48}
                     color="#10b981"
                     strokeWidth={1.5}

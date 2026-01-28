@@ -27,14 +27,7 @@ export default async function ProjectsPage() {
     redirect("/login" as any);
   }
 
-  const creditsPerPlan = {
-    free: 0,
-    student: 10,
-    pro: 100,
-  };
-
-  const totalCredits = creditsPerPlan[user.plan as keyof typeof creditsPerPlan] || 0;
-  const creditsRemaining = Math.max(0, totalCredits - user.projects.length);
+  const creditsRemaining = user.credits;
 
   return (
     <DashboardLayout creditsRemaining={creditsRemaining}>

@@ -21,6 +21,8 @@ model User {
   accounts      Account[]
   projects      Project[]
   notifications Notification[]
+  purchases     Purchase[]
+  intermittentPayments IntermittentPayment[]
 
   @@unique([email])
   @@map("user")
@@ -102,4 +104,35 @@ model Notification {
   @@index([userId])
   @@index([status])
   @@map("notification")
+}
+
+model Purchase {
+  id        String   @id @default(cuid())
+  amount    Float
+  credits   Int
+  paid      Boolean  @default(false)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("purchase")
+}
+
+model IntermittentPayment {
+  id         String   @id @default(uuid())
+  amount     Float
+  credits    Int
+  purchaseId String
+  completed  Boolean  @default(false)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pollUrl    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+  @@index([purchaseId])
+  @@map("intermittent_payment")
 }

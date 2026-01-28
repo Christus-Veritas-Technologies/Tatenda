@@ -61,14 +61,14 @@ export default function SpeakPage() {
             <h2 className="text-3xl font-bold text-foreground mb-2">
               How can I help you today?
             </h2>
-            <div className="flex flex-wrap gap-3 mt-6">
+            <div className="mt-6 grid md:grid-cols-2 md:grid-row-2 gap-2">
               {quickActions.map((action, index) => (
                 <Button
                   key={index}
                   onClick={() => handleQuickAction(action.text)}
-                  className={`${action.bgColor} flex items-center gap-2`}
+                  className={`${action.bgColor} flex items-center gap-2 py-6 rounded-full`}
                 >
-                  {action.text}
+                  <p className="text-md font-semibold">{action.text}</p>
                   <HugeiconsIcon icon={action.icon} size={16} />
                 </Button>
               ))}

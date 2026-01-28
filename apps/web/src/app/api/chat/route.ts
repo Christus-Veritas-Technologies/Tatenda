@@ -70,26 +70,30 @@ export async function POST(request: Request) {
 
     // Create a ReadableStream from the agent's textStream
     const encoder = new TextEncoder();
-    let pdfToolResult: any = null;
     
     const readableStream = new ReadableStream({
       async start(controller) {
         try {
-          // Process the full stream to capture both text and tool results
-          for await (const chunk of stream.fullStream) {
-            // Check if this chunk contains tool results
-            if (chunk.type === 'tool-result') {
-              const payload = chunk.payload as any;
-              if (payload?.toolName === 'generatePDF' || payload?.id === 'generate-pdf') {
-                pdfToolResult = payload.result;
-                console.log("[Chat] PDF tool result:", pdfToolResult);
+          let fullText = '';
+          let pdfToolResult: any = null;
+
+          // Stream the text response in real-time
+          for await (const textChunk of stream.textStream) {
+            fullText += textChunk;
+            controller.enqueue(encoder.encode(textChunk));
+          }
+
+          // After streaming completes, check if any tools were called
+          // Access the final response which contains tool call information
+          const response = await stream;
+          
+          if (response?.toolCalls && Array.isArray(response.toolCalls)) {
+            for (const toolCall of response.toolCalls) {
+              if (toolCall.toolName === 'generatePDF' && toolCall.result?.success) {
+                pdfToolResult = toolCall.result;
+                console.log("[Chat] PDF tool result found:", pdfToolResult);
+                break;
               }
-            }
-            
-            // Stream text chunks
-            if (chunk.type === 'text-delta') {
-              const payload = chunk.payload as any;
-              controller.enqueue(encoder.encode(payload.textDelta || ''));
             }
           }
 

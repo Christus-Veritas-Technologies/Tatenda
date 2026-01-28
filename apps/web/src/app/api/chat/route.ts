@@ -1,6 +1,6 @@
 import { headers } from "next/headers";
 import { authClient } from "@/lib/auth-client";
-import { mastra } from "@tatenda/mastra";
+import { mastra, tatendaFreeAgent } from "@tatenda/mastra";
 
 export async function POST(request: Request) {
   try {
@@ -35,25 +35,42 @@ export async function POST(request: Request) {
     console.log("[Chat] User:", userName, userEmail);
     console.log("[Chat] Message:", message);
 
-    // Get the Tatenda agent from Mastra
-    const agent = mastra.getAgent("tatenda");
-
-    // Generate response with user context and memory
-    const response = await agent.generate(
-      `User: ${userName} (${userEmail})\nMessage: ${message}`,
+    // Stream response with user context
+    const stream = await tatendaFreeAgent.stream(
+      [{ role: "user", content: message }],
       {
-        memory: {
-          resource: session.user.id,
-          thread: `chat-${session.user.id}`,
+        onFinish: ({ text, finishReason, usage }) => {
+          console.log("[Chat] Response finished:", { 
+            textLength: text?.length,
+            finishReason,
+            usage 
+          });
         },
       }
     );
 
-    console.log("[Chat] Response generated:", response.text?.substring(0, 100));
+    // Create a ReadableStream from the agent's textStream
+    const encoder = new TextEncoder();
+    const readableStream = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of stream.textStream) {
+            controller.enqueue(encoder.encode(chunk));
+          }
+          controller.close();
+        } catch (error) {
+          console.error("[Chat] Streaming error:", error);
+          controller.enqueue(encoder.encode("We couldn't process your message"));
+          controller.close();
+        }
+      },
+    });
 
-    return Response.json({
-      success: true,
-      response: response.text,
+    return new Response(readableStream, {
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Transfer-Encoding": "chunked",
+      },
     });
   } catch (error) {
     console.error("[Chat] Error:", {
@@ -62,12 +79,11 @@ export async function POST(request: Request) {
       stack: error instanceof Error ? error.stack : undefined,
     });
 
-    return Response.json(
-      { 
-        message: "Failed to process chat message",
-        error: error instanceof Error ? error.message : "Unknown error"
+    return new Response("We couldn't process your message", {
+      status: 200,
+      headers: {
+        "Content-Type": "text/plain; charset=utf-8",
       },
-      { status: 500 }
-    );
+    });
   }
 }

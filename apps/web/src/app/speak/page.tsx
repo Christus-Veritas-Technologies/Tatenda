@@ -18,19 +18,57 @@ import {
   FileScriptIcon,
   AlertCircle,
   AlertIcon,
+  File02Icon,
+  Download01Icon,
+  Loading02Icon,
 } from "@hugeicons/core-free-icons";
 
+// Message types for different AI responses
+type MessageType = 
+  | "normal"           // Regular chat message
+  | "error"            // Error message
+  | "pdf"              // PDF attachment only
+  | "normal-with-pdf"  // Message with PDF attachment
+  | "loading";         // Loading state (e.g., generating PDF)
+
+type PDFAttachment = {
+  name: string;
+  size: number;        // In bytes
+  createdAt: Date;
+  downloadUrl: string;
+};
+
 type Message = {
+  id: string;          // Unique ID for each message to update later
   role: "user" | "assistant";
   content: string;
-  isError?: boolean;
+  type: MessageType;
+  pdfAttachment?: PDFAttachment;
 };
+
+// Helper function to format file size
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+}
 
 export default function SpeakPage() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const { data: session, isPending } = authClient.useSession();
+
+  // Helper function to update a message by ID
+  const updateMessage = (id: string, updates: Partial<Message>) => {
+    setMessages((prev) => 
+      prev.map((msg) => 
+        msg.id === id ? { ...msg, ...updates } : msg
+      )
+    );
+  };
 
   const chatMutation = useMutation({
     mutationFn: async (userMessage: string) => {
@@ -59,12 +97,20 @@ export default function SpeakPage() {
     onMutate: () => {
       setIsStreaming(true);
       // Add empty assistant message that will be filled with streamed content
+      const messageId = `msg-${Date.now()}`;
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: "" },
+        { 
+          id: messageId,
+          role: "assistant", 
+          content: "",
+          type: "normal",
+        },
       ]);
+      return { messageId };
     },
-    onSuccess: async (stream) => {
+    onSuccess: async (stream, _variables, context) => {
+      const messageId = context?.messageId;
       const reader = stream.getReader();
       const decoder = new TextDecoder();
       let accumulatedText = "";
@@ -81,53 +127,48 @@ export default function SpeakPage() {
           const chunk = decoder.decode(value, { stream: true });
           accumulatedText += chunk;
 
-          // Update the last message (assistant) with accumulated text
-          setMessages((prev) => {
-            const newMessages = [...prev];
-            const lastMessage = newMessages[newMessages.length - 1];
-            if (lastMessage && lastMessage.role === "assistant") {
-              lastMessage.content = accumulatedText;
-            }
-            return newMessages;
-          });
+          // Update the message with accumulated text
+          setMessages((prev) => 
+            prev.map((msg) => 
+              msg.id === messageId 
+                ? { ...msg, content: accumulatedText }
+                : msg
+            )
+          );
         }
 
         // Check if the response is an error message
         if (accumulatedText === "We couldn't process your message") {
-          setMessages((prev) => {
-            const newMessages = [...prev];
-            const lastMessage = newMessages[newMessages.length - 1];
-            if (lastMessage && lastMessage.role === "assistant") {
-              lastMessage.isError = true;
-            }
-            return newMessages;
-          });
+          setMessages((prev) => 
+            prev.map((msg) => 
+              msg.id === messageId 
+                ? { ...msg, type: "error" as MessageType }
+                : msg
+            )
+          );
         }
       } catch (error) {
         console.error("[Chat] Streaming error:", error);
-        setMessages((prev) => {
-          const newMessages = [...prev];
-          const lastMessage = newMessages[newMessages.length - 1];
-          if (lastMessage && lastMessage.role === "assistant") {
-            lastMessage.content = "We couldn't process your message";
-            lastMessage.isError = true;
-          }
-          return newMessages;
-        });
+        setMessages((prev) => 
+          prev.map((msg) => 
+            msg.id === messageId 
+              ? { ...msg, content: "We couldn't process your message", type: "error" as MessageType }
+              : msg
+          )
+        );
         setIsStreaming(false);
       }
     },
-    onError: (error) => {
+    onError: (error, _variables, context) => {
       console.error("[Chat] Mutation error:", error);
-      setMessages((prev) => {
-        const newMessages = [...prev];
-        const lastMessage = newMessages[newMessages.length - 1];
-        if (lastMessage && lastMessage.role === "assistant") {
-          lastMessage.content = "We couldn't process your message";
-          lastMessage.isError = true;
-        }
-        return newMessages;
-      });
+      const messageId = context?.messageId;
+      setMessages((prev) => 
+        prev.map((msg) => 
+          msg.id === messageId 
+            ? { ...msg, content: "We couldn't process your message", type: "error" as MessageType }
+            : msg
+        )
+      );
       setIsStreaming(false);
     },
   });
@@ -136,7 +177,15 @@ export default function SpeakPage() {
     if (!message.trim()) return;
 
     // Add user message to chat
-    setMessages((prev) => [...prev, { role: "user", content: message }]);
+    setMessages((prev) => [
+      ...prev, 
+      { 
+        id: `msg-${Date.now()}`,
+        role: "user", 
+        content: message,
+        type: "normal",
+      }
+    ]);
     
     // Send to API
     chatMutation.mutate(message);

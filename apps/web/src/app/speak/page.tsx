@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { 
   ArrowRight01Icon,
@@ -365,7 +366,7 @@ export default function SpeakPage() {
                   {msg.type === "normal-with-pdf" && (
                     <div className="max-w-[80%] space-y-3">
                       <Card className="p-4 bg-muted">
-                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        <MarkdownRenderer content={msg.content} />
                       </Card>
                       {msg.pdfAttachment && (
                         <Card className="p-4 bg-muted/50 border-brand/20">
@@ -414,12 +415,19 @@ export default function SpeakPage() {
                           : "bg-muted"
                       }`}
                     >
-                      <p className="text-sm whitespace-pre-wrap">
-                        {msg.content}
-                        {msg.role === "assistant" && !msg.content && isStreaming && (
-                          <span className="inline-block w-2 h-4 bg-muted-foreground animate-pulse ml-1" />
-                        )}
-                      </p>
+                      {msg.role === "user" ? (
+                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      ) : (
+                        <>
+                          <MarkdownRenderer 
+                            content={msg.content} 
+                            isStreaming={isStreaming && messages[messages.length - 1]?.id === msg.id}
+                          />
+                          {!msg.content && isStreaming && messages[messages.length - 1]?.id === msg.id && (
+                            <span className="inline-block w-2 h-4 bg-muted-foreground animate-pulse" />
+                          )}
+                        </>
+                      )}
                     </Card>
                   )}
                 </div>

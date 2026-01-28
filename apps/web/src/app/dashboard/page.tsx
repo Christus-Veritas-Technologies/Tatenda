@@ -49,7 +49,8 @@ export default async function DashboardPage() {
 
         {/* Projects Grid or Empty State */}
         {user.projects.length === 0 ? (
-          <ProjectsEmptyState creditsRemaining={creditsRemaining} />
+          <ProjectsEmptyState 
+          creditsRemaining={creditsRemaining} />
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {user.projects.map((project) => (

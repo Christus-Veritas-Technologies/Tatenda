@@ -6,12 +6,10 @@ import { Card } from "./ui/card";
 import { useRouter } from "next/navigation";
 
 interface ProjectsEmptyStateProps {
-  onCreateProject?: () => void;
   creditsRemaining: number;
 }
 
 export function ProjectsEmptyState({
-  onCreateProject,
   creditsRemaining,
 }: ProjectsEmptyStateProps) {
   const hasCredits = creditsRemaining > 0;
@@ -44,7 +42,9 @@ export function ProjectsEmptyState({
           hasCredits ? (
             <Button 
               size="lg" 
-              onClick={onCreateProject}
+              onClick={() => {
+                router.push("/speak")
+              }}
               disabled={!hasCredits}
             >
               Generate Your First Project

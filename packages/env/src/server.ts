@@ -18,8 +18,12 @@ export const env = createEnv({
     SMTP_USER: z.string().min(1),
     SMTP_PASS: z.string().min(1),
     SMTP_FROM: z.string().email(),
+    SMTP_SUPPORT_EMAIL: z.string().email().optional(),
     // OpenAI for Mastra
     OPENAI_API_KEY: z.string().min(1),
+    // Paynow Payment Gateway
+    PAYNOW_INTEGRATION_ID: z.string().min(1),
+    PAYNOW_INTEGRATION_KEY: z.string().min(1),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,

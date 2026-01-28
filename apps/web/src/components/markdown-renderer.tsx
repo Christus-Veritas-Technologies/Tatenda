@@ -6,8 +6,8 @@ import rehypeHighlight from "rehype-highlight";
 import type { Components } from "react-markdown";
 import { cn } from "@/lib/utils";
 
-// Import highlight.js styles (you can choose different themes)
-import "highlight.js/styles/github-dark.css";
+// Import highlight.js styles
+import "highlight.js/styles/github-dark.min.css";
 
 interface MarkdownRendererProps {
   content: string;

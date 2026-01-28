@@ -44,6 +44,12 @@ export async function POST(request: Request) {
     console.log("[Chat] Thread ID:", threadId);
     console.log("[Chat] Message:", message);
 
+    // Increment message count
+    await fetch(`${request.url.split('/api/')[0]}/api/threads/${threadId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    }).catch(err => console.error("[Chat] Failed to increment message count:", err));
+
     // Stream response with memory context
     const stream = await tatendaFreeAgent.stream(
       message,
@@ -51,13 +57,6 @@ export async function POST(request: Request) {
         memory: {
           thread: threadId,
           resource: session.user.id,
-        },
-        memoryOptions: {
-          lastMessages: 30, // Store and recall last 30 messages
-          semanticRecall: {
-            topK: 3,
-            messageRange: 2,
-          },
         },
         onFinish: ({ text, finishReason, usage }) => {
           console.log("[Chat] Response finished:", { 

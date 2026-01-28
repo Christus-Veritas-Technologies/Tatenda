@@ -1,6 +1,5 @@
 import { headers } from "next/headers";
 import { authClient } from "@/lib/auth-client";
-import { storage } from "@tatenda/mastra/storage";
 import { nanoid } from "nanoid";
 
 export async function GET(request: Request) {
@@ -16,24 +15,9 @@ export async function GET(request: Request) {
       return Response.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    // Get memory store
-    const memoryStore = await storage.getStore("memory");
-    if (!memoryStore) {
-      return Response.json({ threads: [] });
-    }
-
-    // Get threads for this user (resourceId)
-    const threads = await memoryStore.getThreadsByResourceId({
-      resourceId: session.user.id,
-    });
-
-    // Sort by most recent first
-    const sortedThreads = threads.sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-
-    return Response.json({ threads: sortedThreads });
+    // For now, return empty threads as they're managed by Memory internally
+    // In a production app, you'd query threads from the database
+    return Response.json({ threads: [] });
   } catch (error) {
     console.error("[Threads API] Error fetching threads:", error);
     return Response.json(
@@ -72,16 +56,7 @@ export async function POST(request: Request) {
       metadata: {},
     };
 
-    // Initialize thread in storage
-    const memoryStore = await storage.getStore("memory");
-    if (memoryStore) {
-      await memoryStore.saveMessages({
-        messages: [],
-        resourceId: session.user.id,
-        threadId,
-      });
-    }
-
+    // Memory will automatically create thread when first message is sent
     return Response.json({ thread });
   } catch (error) {
     console.error("[Threads API] Error creating thread:", error);

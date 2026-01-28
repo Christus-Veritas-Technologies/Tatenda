@@ -9,7 +9,8 @@
     "./agents/config": "./src/agents/config.ts",
     "./agents/training-data": "./src/agents/training-data.ts",
     "./processors": "./src/processors/index.ts",
-    "./tools": "./src/tools/index.ts"
+    "./tools": "./src/tools/index.ts",
+    "./storage": "./src/storage.ts"
   },
   "scripts": {},
   "dependencies": {

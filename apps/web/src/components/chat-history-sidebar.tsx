@@ -1,16 +1,14 @@
-"use client";
-
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { HugeiconsIcon } from "@/components/hugeicons-icon";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Add01Icon,
   Menu01Icon,
   Cancel01Icon,
   MessageAdd01Icon,
-} from "@hugeicons/react";
+} from "@hugeicons/core-free-icons";
 
 interface Thread {
   id: string;

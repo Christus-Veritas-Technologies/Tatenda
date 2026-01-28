@@ -56,9 +56,7 @@ Always use this tool when the user wants their work saved as a file.`,
     createdAt: z.string(),
     message: z.string(),
   }),
-  execute: async ({ context }) => {
-    const { title, content, author, subject, sections } = context;
-
+  execute: async ({ title, content, author, subject, sections }) => {
     try {
       await ensureUploadsDir();
 

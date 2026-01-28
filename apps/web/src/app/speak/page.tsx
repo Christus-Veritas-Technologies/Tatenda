@@ -287,7 +287,7 @@ export default function SpeakPage() {
               <HugeiconsIcon icon={Robot02Icon} size={28} className="text-brand" />
               <h1 className="text-xl font-semibold text-brand">Tatenda</h1>
             </div>
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="ghost" size="sm">
               <Link href="/dashboard">Back to dashboard</Link>
             </Button>
           </div>

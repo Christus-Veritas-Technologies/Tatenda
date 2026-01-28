@@ -33,12 +33,14 @@
   "dependencies": {
     "@tatenda/env": "workspace:*",
     "dotenv": "catalog:",
+    "nanoid": "^5.1.6",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.0",
     "@tatenda/config": "workspace:*",
     "@types/bun": "catalog:",
+    "@types/node": "^25.0.10",
     "turbo": "^2.6.3",
     "typescript": "catalog:"
   },

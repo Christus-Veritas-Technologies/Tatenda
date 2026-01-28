@@ -17,16 +17,19 @@ import {
   GlobeIcon,
   FileScriptIcon,
   AlertCircle,
+  AlertIcon,
 } from "@hugeicons/core-free-icons";
 
 type Message = {
   role: "user" | "assistant";
   content: string;
+  isError?: boolean;
 };
 
 export default function SpeakPage() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isStreaming, setIsStreaming] = useState(false);
   const { data: session, isPending } = authClient.useSession();
 
   const chatMutation = useMutation({
@@ -47,13 +50,85 @@ export default function SpeakPage() {
         throw new Error("Failed to send message");
       }
 
-      return response.json();
+      if (!response.body) {
+        throw new Error("No response body");
+      }
+
+      return response.body;
     },
-    onSuccess: (data) => {
+    onMutate: () => {
+      setIsStreaming(true);
+      // Add empty assistant message that will be filled with streamed content
       setMessages((prev) => [
         ...prev,
-        { role: "assistant", content: data.response },
+        { role: "assistant", content: "" },
       ]);
+    },
+    onSuccess: async (stream) => {
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedText = "";
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) {
+            setIsStreaming(false);
+            break;
+          }
+
+          const chunk = decoder.decode(value, { stream: true });
+          accumulatedText += chunk;
+
+          // Update the last message (assistant) with accumulated text
+          setMessages((prev) => {
+            const newMessages = [...prev];
+            const lastMessage = newMessages[newMessages.length - 1];
+            if (lastMessage && lastMessage.role === "assistant") {
+              lastMessage.content = accumulatedText;
+            }
+            return newMessages;
+          });
+        }
+
+        // Check if the response is an error message
+        if (accumulatedText === "We couldn't process your message") {
+          setMessages((prev) => {
+            const newMessages = [...prev];
+            const lastMessage = newMessages[newMessages.length - 1];
+            if (lastMessage && lastMessage.role === "assistant") {
+              lastMessage.isError = true;
+            }
+            return newMessages;
+          });
+        }
+      } catch (error) {
+        console.error("[Chat] Streaming error:", error);
+        setMessages((prev) => {
+          const newMessages = [...prev];
+          const lastMessage = newMessages[newMessages.length - 1];
+          if (lastMessage && lastMessage.role === "assistant") {
+            lastMessage.content = "We couldn't process your message";
+            lastMessage.isError = true;
+          }
+          return newMessages;
+        });
+        setIsStreaming(false);
+      }
+    },
+    onError: (error) => {
+      console.error("[Chat] Mutation error:", error);
+      setMessages((prev) => {
+        const newMessages = [...prev];
+        const lastMessage = newMessages[newMessages.length - 1];
+        if (lastMessage && lastMessage.role === "assistant") {
+          lastMessage.content = "We couldn't process your message";
+          lastMessage.isError = true;
+        }
+        return newMessages;
+      });
+      setIsStreaming(false);
     },
   });
 
@@ -124,37 +199,42 @@ export default function SpeakPage() {
 
         {/* Main Content */}
         <div className="container max-w-4xl mx-auto px-4 py-8">
-          <div className="mb-6">
-            {isPending ? (
-              <div className="space-y-2">
-                <Skeleton className="h-9 w-48" />
-                <Skeleton className="h-9 w-32" />
+          {/* Only show greeting when no messages */}
+          {messages.length === 0 && (
+            <>
+              <div className="mb-6">
+                {isPending ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-9 w-48" />
+                    <Skeleton className="h-9 w-32" />
+                  </div>
+                ) : (
+                  <h2 className="text-3xl font-semibold text-foreground w-fit p-4 rounded-xl bg-purple-200">
+                    Hello, {session?.user?.name || "User"}
+                  </h2>
+                )}
               </div>
-            ) : (
-              <h2 className="text-3xl font-semibold text-foreground w-fit p-4 rounded-xl bg-purple-200">
-                Hello, {session?.user?.name || "User"}
-              </h2>
-            )}
-          </div>
-          <div className="mb-8">
-            <h3 className="text-3xl font-semibold text-muted-foreground">
-              How can I help you today?
-            </h3>
-            {showQuickActions && (
-              <div className="mt-6 grid md:grid-cols-2 md:grid-row-2 gap-2">
-                {quickActions.map((action, index) => (
-                  <Button
-                    key={index}
-                    onClick={() => handleQuickAction(action.text)}
-                    className={`${action.bgColor} flex items-center gap-2 py-6 rounded-full`}
-                  >
-                    <p className="text-md font-semibold">{action.text}</p>
-                    <HugeiconsIcon icon={action.icon} size={16} />
-                  </Button>
-                ))}
+              <div className="mb-8">
+                <h3 className="text-3xl font-semibold text-muted-foreground">
+                  How can I help you today?
+                </h3>
+                {showQuickActions && (
+                  <div className="mt-6 grid md:grid-cols-2 md:grid-row-2 gap-2">
+                    {quickActions.map((action, index) => (
+                      <Button
+                        key={index}
+                        onClick={() => handleQuickAction(action.text)}
+                        className={`${action.bgColor} flex items-center gap-2 py-6 rounded-full`}
+                      >
+                        <p className="text-md font-semibold">{action.text}</p>
+                        <HugeiconsIcon icon={action.icon} size={16} />
+                      </Button>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </>
+          )}
 
           {/* Messages Display */}
           {messages.length > 0 && (
@@ -164,29 +244,29 @@ export default function SpeakPage() {
                   key={index}
                   className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 >
-                  <Card
-                    className={`max-w-[80%] p-4 ${
-                      msg.role === "user"
-                        ? "bg-brand text-white"
-                        : "bg-muted"
-                    }`}
-                  >
-                    <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                  </Card>
+                  {msg.isError ? (
+                    <div className="max-w-[80%] p-4 border border-red-300 text-red-500 rounded-lg flex items-start gap-3">
+                      <HugeiconsIcon icon={AlertIcon} size={20} className="flex-shrink-0 mt-0.5" />
+                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                    </div>
+                  ) : (
+                    <Card
+                      className={`max-w-[80%] p-4 ${
+                        msg.role === "user"
+                          ? "bg-brand text-white"
+                          : "bg-muted"
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap">
+                        {msg.content}
+                        {msg.role === "assistant" && !msg.content && isStreaming && (
+                          <span className="inline-block w-2 h-4 bg-muted-foreground animate-pulse ml-1" />
+                        )}
+                      </p>
+                    </Card>
+                  )}
                 </div>
               ))}
-              
-              {chatMutation.isPending && (
-                <div className="flex justify-start">
-                  <Card className="max-w-[80%] p-4 bg-muted">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
-                      <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
-                      <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
-                    </div>
-                  </Card>
-                </div>
-              )}
             </div>
           )}
 
@@ -197,7 +277,7 @@ export default function SpeakPage() {
                 <article className="flex flex-row gap-1 mb-1 items-center">
                   <HugeiconsIcon icon={AlertCircle} color="oklch(79.5% 0.184 86.047)" />
                   <p className="font-semibold text-muted-foreground text-yellow-500">Memory active</p>
-                </article> This chat will remember your previous messages and context using Mastra agent memory.
+                </article> This chat will remember your previous setMessages
               </div>
             </Card>
           )}
@@ -212,12 +292,12 @@ export default function SpeakPage() {
                 onKeyPress={handleKeyPress}
                 placeholder="Type your message..."
                 className="pr-12 h-12 rounded-full border-2 focus-visible:ring-brand"
-                disabled={chatMutation.isPending}
+                disabled={isStreaming}
               />
               <Button
                 size="icon"
                 onClick={handleSendMessage}
-                disabled={!message.trim() || chatMutation.isPending}
+                disabled={!message.trim() || isStreaming}
                 className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full w-10 h-10 bg-brand hover:bg-brand/90 disabled:opacity-50"
               >
                 <HugeiconsIcon icon={ArrowRight01Icon} size={20} />

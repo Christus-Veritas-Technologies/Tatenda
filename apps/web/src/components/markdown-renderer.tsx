@@ -2,12 +2,12 @@
 
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import rehypeHighlight from "rehype-highlight";
 import type { Components } from "react-markdown";
 import { cn } from "@/lib/utils";
+import { CodeBlock } from "./code-block";
 
-// Import highlight.js styles
-import "highlight.js/styles/github-dark.min.css";
+// Import highlight.js styles for light mode
+import "highlight.js/styles/github.min.css";
 
 interface MarkdownRendererProps {
   content: string;
@@ -108,6 +108,7 @@ export function MarkdownRenderer({
     // Code blocks
     code: ({ className, children, ...props }) => {
       const match = /language-(\w+)/.exec(className || "");
+      const language = match ? match[1] : undefined;
       const isInline = !match && !className;
 
       if (isInline) {
@@ -122,7 +123,11 @@ export function MarkdownRenderer({
         );
       }
 
-      // Code block
+      // Extract filename from code fence info string (e.g., ```typescript:filename.ts)
+      const fullMatch = className?.match(/language-(\w+)(?::(.+))?/);
+      const filename = fullMatch?.[2];
+
+      // Code block - handled by pre wrapper
       return (
         <code className={cn("text-sm", className)} {...props}>
           {children}
@@ -131,24 +136,40 @@ export function MarkdownRenderer({
     },
 
     // Pre (code block wrapper)
-    pre: ({ children }) => (
-      <div className="relative my-3 group">
-        <pre className="overflow-x-auto rounded-lg bg-[#0d1117] p-4 text-sm">
-          {children}
-        </pre>
-        <button
-          onClick={() => {
-            const codeElement = document.querySelector("pre code");
-            if (codeElement) {
-              navigator.clipboard.writeText(codeElement.textContent || "");
-            }
-          }}
-          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 text-xs bg-muted/80 hover:bg-muted rounded text-muted-foreground"
-        >
-          Copy
-        </button>
-      </div>
-    ),
+    pre: ({ children, ...props }) => {
+      // Extract code content and language from children
+      const childArray = Array.isArray(children) ? children : [children];
+      const codeElement = childArray.find(
+        (child: any) => child?.type === "code"
+      ) as any;
+
+      if (!codeElement) {
+        return <pre {...props}>{children}</pre>;
+      }
+
+      const className = codeElement.props?.className || "";
+      const match = /language-(\w+)(?::(.+))?/.exec(className);
+      const language = match?.[1];
+      const filename = match?.[2];
+      const code = String(codeElement.props?.children || "").replace(/\n$/, "");
+
+      if (!language) {
+        // No language specified, render simple pre
+        return (
+          <pre className="overflow-x-auto rounded-lg bg-muted p-4 text-sm my-3">
+            {children}
+          </pre>
+        );
+      }
+
+      return (
+        <CodeBlock
+          code={code}
+          language={language}
+          filename={filename}
+        />
+      );
+    },
 
     // Tables
     table: ({ children }) => (
@@ -197,7 +218,6 @@ export function MarkdownRenderer({
     <div className={cn("prose prose-sm max-w-none text-foreground", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeHighlight]}
         components={components}
       >
         {content}

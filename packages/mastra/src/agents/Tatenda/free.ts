@@ -10,6 +10,7 @@ import {
   TATENDA_INSTRUCTIONS,
   TATENDA_MODELS,
 } from "../config";
+import { generatePDFTool } from "../../tools";
 
 export const tatendaFreeAgent = new Agent({
   ...TATENDA_AGENT_CONFIG,
@@ -17,4 +18,7 @@ export const tatendaFreeAgent = new Agent({
   name: "tatenda-free",
   instructions: TATENDA_INSTRUCTIONS,
   model: TATENDA_MODELS.free,
+  tools: {
+    generatePDF: generatePDFTool,
+  },
 });

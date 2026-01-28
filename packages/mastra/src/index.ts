@@ -31,6 +31,9 @@ export * from "./agents";
 // Re-export processors
 export * from "./processors";
 
+// Re-export tools
+export * from "./tools";
+
 // Export individual agents for convenience
 export {
   // Text agents

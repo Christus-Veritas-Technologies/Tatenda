@@ -288,17 +288,125 @@ export default function SpeakPage() {
           {/* Messages Display */}
           {messages.length > 0 && (
             <div className="space-y-4 mb-20">
-              {messages.map((msg, index) => (
+              {messages.map((msg) => (
                 <div
-                  key={index}
+                  key={msg.id}
                   className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                 >
-                  {msg.isError ? (
+                  {/* Error Message */}
+                  {msg.type === "error" && (
                     <div className="max-w-[80%] p-4 border border-red-300 text-red-500 rounded-lg flex items-start gap-3">
                       <HugeiconsIcon icon={AlertIcon} size={20} className="flex-shrink-0 mt-0.5" />
                       <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                     </div>
-                  ) : (
+                  )}
+
+                  {/* Loading Message */}
+                  {msg.type === "loading" && (
+                    <Card className="max-w-[80%] p-4 bg-muted border-brand/30">
+                      <div className="flex items-center gap-3">
+                        <HugeiconsIcon 
+                          icon={Loading02Icon} 
+                          size={20} 
+                          className="text-brand animate-spin" 
+                        />
+                        <div className="space-y-2">
+                          <p className="text-sm text-muted-foreground">
+                            {msg.content || "Processing your request..."}
+                          </p>
+                          <div className="flex gap-1">
+                            <div className="w-2 h-2 bg-brand rounded-full animate-bounce" />
+                            <div className="w-2 h-2 bg-brand rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
+                            <div className="w-2 h-2 bg-brand rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  )}
+
+                  {/* PDF Attachment Only */}
+                  {msg.type === "pdf" && msg.pdfAttachment && (
+                    <Card className="max-w-[80%] p-4 bg-muted border-brand/20">
+                      <div className="flex items-start gap-4">
+                        <div className="p-3 bg-brand/10 rounded-lg">
+                          <HugeiconsIcon icon={File02Icon} size={28} className="text-brand" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-foreground truncate">
+                            {msg.pdfAttachment.name}
+                          </p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                            <span className="px-1.5 py-0.5 bg-brand/10 text-brand rounded text-xs font-medium">
+                              PDF
+                            </span>
+                            <span>{formatFileSize(msg.pdfAttachment.size)}</span>
+                            <span>•</span>
+                            <span>
+                              {new Date(msg.pdfAttachment.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex items-center gap-2 text-brand border-brand/30 hover:bg-brand/10"
+                          asChild
+                        >
+                          <a href={msg.pdfAttachment.downloadUrl} download>
+                            <HugeiconsIcon icon={Download01Icon} size={16} />
+                            Download
+                          </a>
+                        </Button>
+                      </div>
+                    </Card>
+                  )}
+
+                  {/* Normal Message with PDF Attachment */}
+                  {msg.type === "normal-with-pdf" && (
+                    <div className="max-w-[80%] space-y-3">
+                      <Card className="p-4 bg-muted">
+                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      </Card>
+                      {msg.pdfAttachment && (
+                        <Card className="p-4 bg-muted/50 border-brand/20">
+                          <div className="flex items-start gap-4">
+                            <div className="p-3 bg-brand/10 rounded-lg">
+                              <HugeiconsIcon icon={File02Icon} size={28} className="text-brand" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-foreground truncate">
+                                {msg.pdfAttachment.name}
+                              </p>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                                <span className="px-1.5 py-0.5 bg-brand/10 text-brand rounded text-xs font-medium">
+                                  PDF
+                                </span>
+                                <span>{formatFileSize(msg.pdfAttachment.size)}</span>
+                                <span>•</span>
+                                <span>
+                                  {new Date(msg.pdfAttachment.createdAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex items-center gap-2 text-brand border-brand/30 hover:bg-brand/10"
+                              asChild
+                            >
+                              <a href={msg.pdfAttachment.downloadUrl} download>
+                                <HugeiconsIcon icon={Download01Icon} size={16} />
+                                Download
+                              </a>
+                            </Button>
+                          </div>
+                        </Card>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Normal Message */}
+                  {msg.type === "normal" && (
                     <Card
                       className={`max-w-[80%] p-4 ${
                         msg.role === "user"

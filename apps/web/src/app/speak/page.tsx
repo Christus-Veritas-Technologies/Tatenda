@@ -1,9 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
+import { authClient } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { 
   ArrowRight01Icon,
@@ -12,10 +15,12 @@ import {
   Add01Icon,
   GlobeIcon,
   FileScriptIcon,
+  AlertCircle,
 } from "@hugeicons/core-free-icons";
 
 export default function SpeakPage() {
   const [message, setMessage] = useState("");
+  const { data: session, isPending } = authClient.useSession();
 
   const quickActions = [
     {
@@ -49,18 +54,35 @@ export default function SpeakPage() {
       <div className="min-h-screen bg-background">
         {/* Header */}
         <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="container flex h-16 items-center px-4">
-            <HugeiconsIcon icon={Robot02Icon} size={28} className="text-brand mr-2" />
-            <h1 className="text-xl font-semibold text-brand">Tatenda</h1>
+          <div className="container flex h-16 items-center justify-between px-4">
+            <div className="flex items-center gap-2">
+              <HugeiconsIcon icon={Robot02Icon} size={28} className="text-brand" />
+              <h1 className="text-xl font-semibold text-brand">Tatenda</h1>
+            </div>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/dashboard">Back to dashboard</Link>
+            </Button>
           </div>
         </header>
 
         {/* Main Content */}
         <div className="container max-w-4xl mx-auto px-4 py-8">
+          <div className="mb-6">
+            {isPending ? (
+              <div className="space-y-2">
+                <Skeleton className="h-9 w-48" />
+                <Skeleton className="h-9 w-32" />
+              </div>
+            ) : (
+              <h2 className="text-3xl font-semibold text-foreground w-fit p-4 rounded-xl bg-purple-200">
+                Hello, {session?.user?.name || "User"}
+              </h2>
+            )}
+          </div>
           <div className="mb-8">
-            <h2 className="text-3xl font-bold text-foreground mb-2">
+            <h3 className="text-3xl font-semibold text-muted-foreground">
               How can I help you today?
-            </h2>
+            </h3>
             <div className="mt-6 grid md:grid-cols-2 md:grid-row-2 gap-2">
               {quickActions.map((action, index) => (
                 <Button
@@ -78,8 +100,9 @@ export default function SpeakPage() {
           {/* Memory placeholder for Mastra agent */}
           <Card className="mb-20 p-6 border border-yellow-300">
             <div className="text-muted-foreground text-sm">
-              <article className="inlin-flex gap-2">
-                
+              <article className="flex flex-row gap-1 mb-1 items-center">
+                <HugeiconsIcon icon={AlertCircle} color="oklch(79.5% 0.184 86.047)" />
+                <p className="font-semibold text-muted-foreground text-yellow-500">Memory active</p>
                 </article> This chat will remember your previous messages and context using Mastra agent memory.
             </div>
           </Card>

@@ -15,16 +15,16 @@ export function ProjectsEmptyState({
   const hasCredits = creditsRemaining > 0;
 
   return (
-    <div className="flex flex-col items-center justify-center py-20 px-4 rounded-lg border border-dashed border-muted-foreground/25 bg-muted/20">
-      <div className="w-48 h-48 rounded-full overflow-hidden mb-6 bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/20 dark:to-blue-900/20 flex items-center justify-center">
+    <div className="flex flex-col mt-12 items-center justify-center">
+      <Card className="w-48 h-48 rounded-full overflow-hidden mb-6 bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-900/20 dark:to-blue-900/20 flex items-center justify-center">
         <Image
-          src="/images/empty-state.svg"
+          src="/icons/void.png"
           alt="No projects"
           width={192}
           height={192}
           className="object-contain"
         />
-      </div>
+      </Card>
       <h3 className="text-2xl font-semibold text-foreground mb-2 text-center">
         No projects yet
       </h3>

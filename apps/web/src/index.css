@@ -1,5 +1,5 @@
 /* Poppins Font Import */
-@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap");
 
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -29,7 +29,7 @@
   --secondary: var(--color-light);
   --secondary-foreground: var(--color-darkest);
   --muted: var(--color-light);
-  --muted-foreground: var(--color-mid);
+  --muted-foreground: oklch(55.1% 0.027 264.364);
   --accent: var(--color-brand);
   --accent-foreground: var(--color-lightest);
   --destructive: #ef4444;

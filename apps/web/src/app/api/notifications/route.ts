@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db } from "@tatenda/db";
+import db from "@tatenda/db";
 import { authClient } from "@/lib/auth-client";
 
 export async function GET() {

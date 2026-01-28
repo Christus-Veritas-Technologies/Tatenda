@@ -1,51 +1,10 @@
-import { Mastra } from "@mastra/core";
+/**
+ * Mastra AI Integration for Web App
+ *
+ * Re-exports all Mastra functionality from the @tatenda/mastra package.
+ * This file serves as the entry point for Mastra in the web application.
+ */
 
-// Text agents
-import { tatendaFreeAgent, tatendaProAgent, getTatendaTextAgent } from "./agents/Tatenda";
+// Re-export everything from the mastra package
+export * from "@tatenda/mastra";
 
-// Realtime audio agents
-import {
-  tatendaRealtimeFreeAgent,
-  tatendaRealtimeProAgent,
-  getTatendaRealtimeAgent,
-} from "./agents/TatendaRealtime";
-
-// Image generation agents
-import {
-  tatendaImageFreeAgent,
-  tatendaImageProAgent,
-  getTatendaImageAgent,
-} from "./agents/TatendaImage";
-
-// Export agent config and types
-export * from "./agents/config";
-
-// Export individual agents
-export {
-  // Text agents
-  tatendaFreeAgent,
-  tatendaProAgent,
-  getTatendaTextAgent,
-  // Realtime agents
-  tatendaRealtimeFreeAgent,
-  tatendaRealtimeProAgent,
-  getTatendaRealtimeAgent,
-  // Image agents
-  tatendaImageFreeAgent,
-  tatendaImageProAgent,
-  getTatendaImageAgent,
-};
-
-export const mastra = new Mastra({
-  agents: {
-    // Text agents
-    tatendaFreeAgent,
-    tatendaProAgent,
-    // Realtime agents
-    tatendaRealtimeFreeAgent,
-    tatendaRealtimeProAgent,
-    // Image agents
-    tatendaImageFreeAgent,
-    tatendaImageProAgent,
-  },
-});

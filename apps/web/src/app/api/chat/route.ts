@@ -70,37 +70,38 @@ export async function POST(request: Request) {
 
     // Create a ReadableStream from the agent's textStream
     const encoder = new TextEncoder();
-    let toolCallResults: any[] = [];
+    let pdfToolResult: any = null;
     
     const readableStream = new ReadableStream({
       async start(controller) {
         try {
-          // Listen for tool calls
+          // Process the full stream to capture both text and tool results
           for await (const chunk of stream.fullStream) {
             // Check if this chunk contains tool results
             if (chunk.type === 'tool-result') {
-              toolCallResults.push(chunk);
+              const payload = chunk.payload as any;
+              if (payload?.toolName === 'generatePDF' || payload?.id === 'generate-pdf') {
+                pdfToolResult = payload.result;
+                console.log("[Chat] PDF tool result:", pdfToolResult);
+              }
+            }
+            
+            // Stream text chunks
+            if (chunk.type === 'text-delta') {
+              const payload = chunk.payload as any;
+              controller.enqueue(encoder.encode(payload.textDelta || ''));
             }
           }
 
-          // Stream the text response
-          for await (const textChunk of stream.textStream) {
-            controller.enqueue(encoder.encode(textChunk));
-          }
-
           // If PDF was generated, append PDF metadata as JSON
-          const pdfToolResult = toolCallResults.find(
-            (result: any) => result.toolName === 'generatePDF' && result.result?.success
-          );
-
-          if (pdfToolResult?.result) {
-            const pdfData = pdfToolResult.result;
+          if (pdfToolResult?.success) {
+            console.log("[Chat] Appending PDF metadata to stream");
             const pdfMetadata = JSON.stringify({
               __PDF_ATTACHMENT__: true,
-              fileName: pdfData.fileName,
-              fileSize: pdfData.fileSize,
-              downloadUrl: pdfData.downloadUrl,
-              createdAt: pdfData.createdAt,
+              fileName: pdfToolResult.fileName,
+              fileSize: pdfToolResult.fileSize,
+              downloadUrl: pdfToolResult.downloadUrl,
+              createdAt: pdfToolResult.createdAt,
             });
             controller.enqueue(encoder.encode(`\n\n${pdfMetadata}`));
           }

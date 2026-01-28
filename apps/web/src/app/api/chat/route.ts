@@ -19,10 +19,11 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { message, userName, userEmail } = body as { 
+    const { message, userName, userEmail, threadId } = body as { 
       message: string; 
       userName: string; 
       userEmail: string;
+      threadId: string;
     };
 
     if (!message) {
@@ -32,13 +33,32 @@ export async function POST(request: Request) {
       );
     }
 
+    if (!threadId) {
+      return Response.json(
+        { message: "Thread ID is required" },
+        { status: 400 }
+      );
+    }
+
     console.log("[Chat] User:", userName, userEmail);
+    console.log("[Chat] Thread ID:", threadId);
     console.log("[Chat] Message:", message);
 
-    // Stream response with user context
+    // Stream response with memory context
     const stream = await tatendaFreeAgent.stream(
-      [{ role: "user", content: message }],
+      message,
       {
+        memory: {
+          thread: threadId,
+          resource: session.user.id,
+        },
+        memoryOptions: {
+          lastMessages: 30, // Store and recall last 30 messages
+          semanticRecall: {
+            topK: 3,
+            messageRange: 2,
+          },
+        },
         onFinish: ({ text, finishReason, usage }) => {
           console.log("[Chat] Response finished:", { 
             textLength: text?.length,

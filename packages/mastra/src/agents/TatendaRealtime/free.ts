@@ -5,7 +5,7 @@
  * Available to all users on the free plan for voice conversations.
  */
 import { Agent } from "@mastra/core/agent";
-import { TATENDA_REALTIME_CONFIG, TATENDA_REALTIME_MODELS } from "../config";
+import { TATENDA_REALTIME_CONFIG, TATENDA_REALTIME_MODELS, TATENDA_REALTIME_INSTRUCTIONS } from "../config";
 import { SecurityGuardrail } from "../../processors/security-guardrail";
 import { OffTopicGuardrail } from "../../processors/off-topic-guardrail";
 import { memory } from "../../storage";
@@ -13,7 +13,7 @@ import { memory } from "../../storage";
 export const tatendaRealtimeFreeAgent = new Agent({
   ...TATENDA_REALTIME_CONFIG,
   id: `${TATENDA_REALTIME_CONFIG.id}-free`,
-  instructions: TATENDA_REALTIME_CONFIG.instructions,
+  instructions: TATENDA_REALTIME_INSTRUCTIONS,
   model: TATENDA_REALTIME_MODELS.free,
   inputProcessors: [new SecurityGuardrail(), new OffTopicGuardrail()],
   memory,

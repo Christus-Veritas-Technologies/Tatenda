@@ -10,7 +10,7 @@ import {
   TATENDA_INSTRUCTIONS,
   TATENDA_MODELS,
 } from "../config";
-import { generatePDFTool } from "../../tools";
+import { generatePDFTool, generateProjectTool } from "../../tools";
 import { memory } from "../../storage";
 
 export const tatendaFreeAgent = new Agent({
@@ -21,6 +21,7 @@ export const tatendaFreeAgent = new Agent({
   model: TATENDA_MODELS.free,
   tools: {
     generatePDF: generatePDFTool,
+    generateProject: generateProjectTool,
   },
   memory,
 });

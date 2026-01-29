@@ -3,8 +3,17 @@
  * 
  * Run with: bun run seed:templates
  */
-import prisma from './index';
+import 'dotenv/config';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '../prisma/generated/client';
 import { DEFAULT_TEMPLATES } from './templates';
+
+// Load env from web app
+const dotenv = await import('dotenv');
+dotenv.config({ path: '../../apps/web/.env' });
+
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
+const prisma = new PrismaClient({ adapter });
 
 async function seedTemplates() {
   console.log('🌱 Seeding default templates...');

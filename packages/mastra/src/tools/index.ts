@@ -5,3 +5,5 @@
  */
 export { generatePDFTool } from "./pdf-generator";
 export { generateProjectTool } from "./project-generator";
+export { pickProjectTool, showTemplatesTool } from "./project-picker";
+export { editProjectTool, regenerateProjectTool } from "./project-editor";

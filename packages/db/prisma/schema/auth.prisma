@@ -79,15 +79,22 @@ model Verification {
 model Project {
   id          String   @id @default(cuid())
   title       String
-  description String?
-  content     String?
-  subject     String?   // Combined Science, Mathematics, etc
+  description String?   // Statement of intent (from Stage 1.2)
+  content     String?   // JSON blob with all stages and file info
+  subject     String?   // Computer Science, Heritage Studies, etc
+  level       String?   // O-Level, A-Level
+  author      String?   // Student's name
+  school      String?   // School name
+  fileName    String?   // Generated PDF filename
+  downloadUrl String?   // Download URL for the PDF
+  fileSize    Int?      // File size in bytes
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([userId])
+  @@index([subject])
   @@map("project")
 }
 

@@ -1,9 +1,10 @@
 import { headers } from "next/headers";
 import { authClient } from "@/lib/auth-client";
 import { tatendaFreeAgent } from "@tatenda/mastra";
+import prisma from "@tatenda/db";
 
 // Structured response types
-export type MessageType = "normal" | "pdf" | "normal-with-pdf";
+export type MessageType = "normal" | "pdf" | "normal-with-pdf" | "project" | "normal-with-project";
 
 export interface ChatResponse {
   messageType: MessageType;
@@ -11,7 +12,15 @@ export interface ChatResponse {
   pdf: {
     url: string;
     name: string;
-    size: string; // Formatted size (e.g., "1.2 MB")
+    size: string;
+  } | null;
+  project: {
+    id: string;
+    url: string;
+    name: string;
+    size: string;
+    title: string;
+    subject: string;
   } | null;
 }
 
@@ -77,10 +86,11 @@ export async function POST(request: Request) {
       toolResultsCount: (response as any).toolResults?.length || 0,
     });
 
-    // Check if PDF was generated - toolResults contains executed tool results
-    // Structure: { type: "tool-result", payload: { toolName, result: {...} } }
+    // Check for tool results
     let pdfResult: any = null;
+    let projectResult: any = null;
     const toolResults = (response as any).toolResults;
+    
     if (toolResults && Array.isArray(toolResults)) {
       for (const item of toolResults) {
         const toolName = item.payload?.toolName;
@@ -88,10 +98,59 @@ export async function POST(request: Request) {
         
         console.log("[Chat] Checking tool result:", { toolName, success: result?.success });
         
+        // Check for PDF generation
         if ((toolName === 'generatePDF' || toolName === 'generate-pdf') && result?.success) {
           pdfResult = result;
           console.log("[Chat] PDF generated:", pdfResult);
-          break;
+        }
+        
+        // Check for Project generation
+        if ((toolName === 'generateProject' || toolName === 'generate-project') && result?.success) {
+          projectResult = result;
+          console.log("[Chat] Project generated:", projectResult);
+          
+          // Extract project args
+          const projectArgs = item.payload?.args;
+          
+          // Save project to database with all metadata
+          try {
+            const savedProject = await prisma.project.create({
+              data: {
+                id: projectResult.projectId,
+                title: projectArgs?.title || "Untitled Project",
+                description: projectArgs?.stage1?.statementOfIntent || null,
+                subject: projectArgs?.subject || null,
+                level: projectArgs?.level || null,
+                author: projectArgs?.author || session.user.name || null,
+                school: projectArgs?.school || null,
+                fileName: projectResult.fileName,
+                downloadUrl: projectResult.downloadUrl,
+                fileSize: projectResult.fileSize,
+                content: JSON.stringify({
+                  createdAt: projectResult.createdAt,
+                  stages: {
+                    stage1: projectArgs?.stage1,
+                    stage2: projectArgs?.stage2,
+                    stage3: projectArgs?.stage3,
+                    stage4: projectArgs?.stage4,
+                    stage5: projectArgs?.stage5,
+                    stage6: projectArgs?.stage6,
+                  },
+                }),
+                userId: session.user.id,
+              },
+            });
+            console.log("[Chat] Project saved to DB:", savedProject.id);
+            
+            // Deduct 1 credit for project generation
+            await prisma.user.update({
+              where: { id: session.user.id },
+              data: { credits: { decrement: 1 } },
+            });
+            console.log("[Chat] Credit deducted for project generation");
+          } catch (dbError) {
+            console.error("[Chat] Failed to save project to DB:", dbError);
+          }
         }
       }
     }
@@ -105,16 +164,32 @@ export async function POST(request: Request) {
       return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
     };
 
+    // Determine message type
+    let messageType: MessageType = "normal";
+    if (projectResult && pdfResult) {
+      messageType = response.text ? "normal-with-project" : "project";
+    } else if (projectResult) {
+      messageType = response.text ? "normal-with-project" : "project";
+    } else if (pdfResult) {
+      messageType = response.text ? "normal-with-pdf" : "pdf";
+    }
+
     // Build structured response
     const chatResponse: ChatResponse = {
-      messageType: pdfResult 
-        ? (response.text ? "normal-with-pdf" : "pdf") 
-        : "normal",
+      messageType,
       text: response.text || null,
       pdf: pdfResult ? {
         url: pdfResult.downloadUrl,
         name: pdfResult.fileName,
         size: formatFileSize(pdfResult.fileSize),
+      } : null,
+      project: projectResult ? {
+        id: projectResult.projectId,
+        url: projectResult.downloadUrl,
+        name: projectResult.fileName,
+        size: formatFileSize(projectResult.fileSize),
+        title: (toolResults?.find((t: any) => t.payload?.toolName === 'generateProject')?.payload?.args?.title) || "Project",
+        subject: (toolResults?.find((t: any) => t.payload?.toolName === 'generateProject')?.payload?.args?.subject) || "General",
       } : null,
     };
 
@@ -122,6 +197,7 @@ export async function POST(request: Request) {
       messageType: chatResponse.messageType,
       hasText: !!chatResponse.text,
       hasPdf: !!chatResponse.pdf,
+      hasProject: !!chatResponse.project,
     });
 
     return Response.json(chatResponse);
@@ -138,6 +214,7 @@ export async function POST(request: Request) {
       messageType: "normal",
       text: "We couldn't process your message. Please try again.",
       pdf: null,
+      project: null,
     };
 
     return Response.json(errorResponse, { status: 500 });

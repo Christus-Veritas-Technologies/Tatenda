@@ -24,21 +24,33 @@ import {
   File02Icon,
   Download01Icon,
   Loading02Icon,
+  Notebook01Icon,
 } from "@hugeicons/core-free-icons";
 import { nanoid } from "nanoid";
 
 // Message types for different AI responses
 type MessageType = 
-  | "normal"           // Regular chat message
-  | "error"            // Error message
-  | "pdf"              // PDF attachment only
-  | "normal-with-pdf"  // Message with PDF attachment
-  | "loading";         // Loading state
+  | "normal"              // Regular chat message
+  | "error"               // Error message
+  | "pdf"                 // PDF attachment only
+  | "normal-with-pdf"     // Message with PDF attachment
+  | "project"             // Project attachment only
+  | "normal-with-project" // Message with project attachment
+  | "loading";            // Loading state
 
 type PDFAttachment = {
   name: string;
-  size: string;        // Formatted size string (e.g., "1.2 MB")
+  size: string;
   url: string;
+};
+
+type ProjectAttachment = {
+  id: string;
+  name: string;
+  size: string;
+  url: string;
+  title: string;
+  subject: string;
 };
 
 type Message = {
@@ -47,6 +59,7 @@ type Message = {
   content: string | null;
   type: MessageType;
   pdf?: PDFAttachment;
+  project?: ProjectAttachment;
 };
 
 // Helper function to format file size
@@ -60,12 +73,20 @@ function formatFileSize(bytes: number): string {
 
 // API response type
 interface ChatResponse {
-  messageType: "normal" | "pdf" | "normal-with-pdf";
+  messageType: "normal" | "pdf" | "normal-with-pdf" | "project" | "normal-with-project";
   text: string | null;
   pdf: {
     url: string;
     name: string;
     size: string;
+  } | null;
+  project: {
+    id: string;
+    url: string;
+    name: string;
+    size: string;
+    title: string;
+    subject: string;
   } | null;
 }
 
@@ -159,6 +180,14 @@ export default function SpeakPage() {
                   name: data.pdf.name,
                   size: data.pdf.size,
                   url: data.pdf.url,
+                } : undefined,
+                project: data.project ? {
+                  id: data.project.id,
+                  name: data.project.name,
+                  size: data.project.size,
+                  url: data.project.url,
+                  title: data.project.title,
+                  subject: data.project.subject,
                 } : undefined,
               }
             : msg
@@ -381,6 +410,21 @@ export default function SpeakPage() {
                         </div>
                       );
 
+                    case "project":
+                      return msg.project ? <ProjectCard project={msg.project} /> : null;
+
+                    case "normal-with-project":
+                      return (
+                        <div className="space-y-3">
+                          {msg.content && (
+                            <Card className="p-4 bg-muted rounded-2xl rounded-tl-sm">
+                              <MarkdownRenderer content={msg.content} />
+                            </Card>
+                          )}
+                          {msg.project && <ProjectCard project={msg.project} />}
+                        </div>
+                      );
+
                     case "normal":
                     default:
                       return (
@@ -537,6 +581,88 @@ function PDFCard({ pdf }: { pdf: PDFAttachment }) {
         >
           <HugeiconsIcon icon={Download01Icon} size={16} />
           Download
+        </Button>
+      </div>
+    </Card>
+  );
+}
+
+// Project Card Component - More prominent for full ZIMSEC projects
+function ProjectCard({ project }: { project: ProjectAttachment }) {
+  return (
+    <Card className="overflow-hidden border-2 border-emerald-500/40 bg-gradient-to-br from-emerald-50 via-teal-50/50 to-background dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-background shadow-xl hover:shadow-2xl transition-all duration-300 rounded-2xl">
+      {/* Header with gradient */}
+      <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-600 p-4">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-white/20 backdrop-blur-sm rounded-xl">
+            <HugeiconsIcon icon={Notebook01Icon} size={24} className="text-white" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-white text-sm">
+              🎉 ZIMSEC Project Generated!
+            </p>
+            <p className="text-white/80 text-xs">
+              Complete SBP with all 6 stages
+            </p>
+          </div>
+          <span className="px-2.5 py-1 bg-white/20 backdrop-blur-sm text-white rounded-full text-xs font-medium">
+            {project.size}
+          </span>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="p-4 space-y-3">
+        {/* Project Title */}
+        <div>
+          <p className="font-semibold text-foreground text-base line-clamp-2">
+            {project.title}
+          </p>
+          <div className="flex items-center gap-2 mt-1.5">
+            <span className="px-2 py-0.5 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 rounded-full text-xs font-medium">
+              {project.subject}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              45 marks structure
+            </span>
+          </div>
+        </div>
+
+        {/* Stage indicators */}
+        <div className="flex gap-1">
+          {[1, 2, 3, 4, 5, 6].map((stage) => (
+            <div
+              key={stage}
+              className="flex-1 h-1.5 rounded-full bg-emerald-500/80"
+              title={`Stage ${stage}`}
+            />
+          ))}
+        </div>
+
+        {/* File info */}
+        <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
+          <div className="p-1.5 bg-red-100 dark:bg-red-950/30 rounded">
+            <HugeiconsIcon icon={File02Icon} size={14} className="text-red-600 dark:text-red-400" />
+          </div>
+          <p className="font-medium text-foreground text-xs truncate flex-1">
+            {project.name}
+          </p>
+        </div>
+
+        {/* Download Button */}
+        <Button
+          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg transition-all h-10 text-sm gap-2 font-medium"
+          onClick={() => {
+            const link = document.createElement('a');
+            link.href = project.url;
+            link.download = project.name;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }}
+        >
+          <HugeiconsIcon icon={Download01Icon} size={18} />
+          Download Project
         </Button>
       </div>
     </Card>

@@ -18,7 +18,15 @@ import {
   Search01Icon,
   StarIcon,
   Users01Icon,
+  Delete01Icon,
+  MoreHorizontalIcon,
 } from "@hugeicons/core-free-icons";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -91,6 +99,29 @@ export default function TemplatesPage() {
       setNewTemplateDesc("");
     },
   });
+
+  // Delete template mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (templateId: string) => {
+      const response = await fetch(`/api/templates/${templateId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to delete template");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["templates"] });
+    },
+  });
+
+  const handleDeleteTemplate = (templateId: string) => {
+    if (confirm("Are you sure you want to delete this template?")) {
+      deleteMutation.mutate(templateId);
+    }
+  };
 
   const templates: Template[] = data?.templates || [];
   
@@ -316,6 +347,7 @@ export default function TemplatesPage() {
                     key={template.id} 
                     template={template} 
                     index={index}
+                    onDelete={handleDeleteTemplate}
                   />
                 ))}
               </AnimatePresence>
@@ -355,9 +387,10 @@ export default function TemplatesPage() {
 interface TemplateCardProps {
   template: Template;
   index: number;
+  onDelete?: (templateId: string) => void;
 }
 
-function TemplateCard({ template, index }: TemplateCardProps) {
+function TemplateCard({ template, index, onDelete }: TemplateCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -401,6 +434,36 @@ function TemplateCard({ template, index }: TemplateCardProps) {
             <div className="absolute top-2 right-2 bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
               <HugeiconsIcon icon={StarIcon} size={12} />
               Default
+            </div>
+          )}
+          
+          {/* Options menu for user templates */}
+          {!template.isDefault && onDelete && (
+            <div className="absolute top-2 right-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    size="icon" 
+                    variant="secondary" 
+                    className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <HugeiconsIcon icon={MoreHorizontalIcon} size={14} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem 
+                    className="text-red-600 focus:text-red-600"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(template.id);
+                    }}
+                  >
+                    <HugeiconsIcon icon={Delete01Icon} size={16} className="mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
         </div>

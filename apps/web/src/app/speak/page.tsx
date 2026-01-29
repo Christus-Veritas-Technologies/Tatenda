@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { authClient } from "@/lib/auth-client";
 import { useMutation, useQuery } from "@tanstack/react-query";
@@ -27,6 +27,9 @@ import {
   Notebook01Icon,
 } from "@hugeicons/core-free-icons";
 import { nanoid } from "nanoid";
+
+// Generate unique message ID
+const generateMessageId = () => `msg-${nanoid(12)}`;
 
 // Message types for different AI responses
 type MessageType = 
@@ -129,6 +132,9 @@ export default function SpeakPage() {
     );
   };
 
+  // Track the current loading message ID to prevent duplicates
+  const loadingMessageIdRef = useRef<string | null>(null);
+
   const chatMutation = useMutation({
     mutationFn: async (userMessage: string): Promise<ChatResponse> => {
       const response = await fetch("/api/chat", {
@@ -152,21 +158,34 @@ export default function SpeakPage() {
     },
     onMutate: () => {
       setIsLoading(true);
-      // Add loading message
-      const messageId = `msg-${Date.now()}`;
-      setMessages((prev) => [
-        ...prev,
-        { 
-          id: messageId,
-          role: "assistant", 
-          content: null,
-          type: "loading",
-        },
-      ]);
-      return { messageId };
+      
+      // Generate unique ID and store in ref to prevent duplication from React Strict Mode
+      const messageId = generateMessageId();
+      
+      // Only add loading message if we don't already have one pending
+      if (!loadingMessageIdRef.current) {
+        loadingMessageIdRef.current = messageId;
+        setMessages((prev) => [
+          ...prev,
+          { 
+            id: messageId,
+            role: "assistant" as const, 
+            content: null,
+            type: "loading" as MessageType,
+          },
+        ]);
+      }
+      
+      return { messageId: loadingMessageIdRef.current };
     },
     onSuccess: (data: ChatResponse, _variables, context) => {
       const messageId = context?.messageId;
+      
+      if (!messageId) {
+        console.error("[Chat] No message ID in context");
+        setIsLoading(false);
+        return;
+      }
       
       // Update the loading message with the actual response
       setMessages((prev) => 
@@ -174,6 +193,7 @@ export default function SpeakPage() {
           msg.id === messageId 
             ? { 
                 ...msg, 
+                role: "assistant" as const, // Ensure role is correct
                 content: data.text,
                 type: data.messageType,
                 pdf: data.pdf ? {
@@ -194,43 +214,53 @@ export default function SpeakPage() {
         )
       );
 
+      // Clear the loading ref
+      loadingMessageIdRef.current = null;
       setIsLoading(false);
       refetchThreadData();
     },
     onError: (error, _variables, context) => {
       console.error("[Chat] Mutation error:", error);
       const messageId = context?.messageId;
-      setMessages((prev) => 
-        prev.map((msg) => 
-          msg.id === messageId 
-            ? { ...msg, content: "We couldn't process your message", type: "error" as MessageType }
-            : msg
-        )
-      );
+      
+      if (messageId) {
+        setMessages((prev) => 
+          prev.map((msg) => 
+            msg.id === messageId 
+              ? { ...msg, role: "assistant" as const, content: "We couldn't process your message", type: "error" as MessageType }
+              : msg
+          )
+        );
+      }
+      
+      // Clear the loading ref
+      loadingMessageIdRef.current = null;
       setIsLoading(false);
     },
   });
 
-  const handleSendMessage = () => {
-    if (!message.trim()) return;
+  const handleSendMessage = useCallback(() => {
+    if (!message.trim() || isLoading) return;
 
-    // Add user message to chat
+    const userMessage = message.trim();
+    
+    // Add user message to chat with unique ID
     setMessages((prev) => [
       ...prev, 
       { 
-        id: `msg-${Date.now()}`,
-        role: "user", 
-        content: message,
-        type: "normal",
+        id: generateMessageId(),
+        role: "user" as const, 
+        content: userMessage,
+        type: "normal" as MessageType,
       }
     ]);
     
-    // Send to API
-    chatMutation.mutate(message);
-    
-    // Clear input
+    // Clear input immediately
     setMessage("");
-  };
+    
+    // Send to API
+    chatMutation.mutate(userMessage);
+  }, [message, isLoading, chatMutation]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {

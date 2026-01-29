@@ -71,6 +71,12 @@ type Message = {
   templates?: TemplateOption[];
 };
 
+type ChatRequestPayload = {
+  message: string;
+  selectedTemplateId?: string | null;
+  selectedTemplateName?: string | null;
+};
+
 // Helper function to format file size
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return "0 Bytes";
@@ -141,19 +147,22 @@ export default function SpeakPage() {
 
   // Track the current loading message ID to prevent duplicates
   const loadingMessageIdRef = useRef<string | null>(null);
+  const selectedTemplateRef = useRef<{ id: string; name: string } | null>(null);
 
   const chatMutation = useMutation({
-    mutationFn: async (userMessage: string): Promise<ChatResponse> => {
+    mutationFn: async (payload: ChatRequestPayload): Promise<ChatResponse> => {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          message: userMessage,
+          message: payload.message,
           userName: session?.user?.name || "User",
           userEmail: session?.user?.email || "",
           threadId: currentThreadId,
+          selectedTemplateId: payload.selectedTemplateId ?? null,
+          selectedTemplateName: payload.selectedTemplateName ?? null,
         }),
       });
 
@@ -267,7 +276,11 @@ export default function SpeakPage() {
     setMessage("");
     
     // Send to API
-    chatMutation.mutate(userMessage);
+    chatMutation.mutate({
+      message: userMessage,
+      selectedTemplateId: selectedTemplateRef.current?.id ?? null,
+      selectedTemplateName: selectedTemplateRef.current?.name ?? null,
+    });
   }, [message, isLoading, chatMutation]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -309,6 +322,9 @@ export default function SpeakPage() {
     if (isLoading) return;
     
     const selectionMessage = `I want the "${template.name}" template`;
+
+    // Persist selection for subsequent requests (hidden from chat UI)
+    selectedTemplateRef.current = { id: template.id, name: template.name };
     
     // Add user message to chat
     setMessages((prev) => [
@@ -322,7 +338,11 @@ export default function SpeakPage() {
     ]);
     
     // Send to API
-    chatMutation.mutate(selectionMessage);
+    chatMutation.mutate({
+      message: selectionMessage,
+      selectedTemplateId: template.id,
+      selectedTemplateName: template.name,
+    });
   }, [isLoading, chatMutation]);
 
   const handleThreadSelect = (threadId: string) => {

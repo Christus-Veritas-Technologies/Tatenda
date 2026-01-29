@@ -57,11 +57,13 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { message, userName, userEmail, threadId } = body as { 
+    const { message, userName, userEmail, threadId, selectedTemplateId, selectedTemplateName } = body as { 
       message: string; 
       userName: string; 
       userEmail: string;
       threadId: string;
+      selectedTemplateId?: string | null;
+      selectedTemplateName?: string | null;
     };
 
     if (!message) {
@@ -82,14 +84,54 @@ export async function POST(request: Request) {
     console.log("[Chat] Thread ID:", threadId);
     console.log("[Chat] Message:", message);
 
+    // Track selected template per thread (in-memory; good for dev + single instance)
+    // This helps ensure the agent keeps using the chosen template when generating the project.
+    const globalAny = globalThis as any;
+    if (!globalAny.__tatendaTemplateSelectionByThread) {
+      globalAny.__tatendaTemplateSelectionByThread = new Map<string, { id: string; name: string }>();
+    }
+    const templateSelectionByThread: Map<string, { id: string; name: string }> =
+      globalAny.__tatendaTemplateSelectionByThread;
+
+    // If the user message indicates a template choice, capture it (fallback parsing)
+    const templateChoiceMatch = typeof message === "string"
+      ? message.match(/I want the \"(.+?)\" template/i)
+      : null;
+
+    const inferredTemplateName = templateChoiceMatch?.[1]?.trim();
+    const inferredTemplate = inferredTemplateName
+      ? DEFAULT_TEMPLATES.find((t) => t.name.toLowerCase() === inferredTemplateName.toLowerCase())
+      : undefined;
+
+    const effectiveTemplateId =
+      (selectedTemplateId && typeof selectedTemplateId === "string" ? selectedTemplateId : null) ||
+      inferredTemplate?.id ||
+      templateSelectionByThread.get(threadId)?.id ||
+      null;
+
+    const effectiveTemplateName =
+      (selectedTemplateName && typeof selectedTemplateName === "string" ? selectedTemplateName : null) ||
+      inferredTemplate?.name ||
+      templateSelectionByThread.get(threadId)?.name ||
+      null;
+
+    if (effectiveTemplateId && effectiveTemplateName) {
+      templateSelectionByThread.set(threadId, { id: effectiveTemplateId, name: effectiveTemplateName });
+    }
+
     // Increment message count
     await fetch(`${request.url.split('/api/')[0]}/api/threads/${threadId}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
     }).catch(err => console.error("[Chat] Failed to increment message count:", err));
 
+    const messageForAgent =
+      effectiveTemplateId && effectiveTemplateName
+        ? `${message}\n\n[Selected template]\nname: ${effectiveTemplateName}\nid: ${effectiveTemplateId}\nInstruction: When you generate a project PDF, include templateId exactly as above so the PDF styling changes.\n`
+        : message;
+
     // Generate response with memory context (non-streaming for reliability)
-    const response = await tatendaFreeAgent.generate(message, {
+    const response = await tatendaFreeAgent.generate(messageForAgent, {
       memory: {
         thread: threadId,
         resource: session.user.id,

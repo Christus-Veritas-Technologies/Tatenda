@@ -19,6 +19,159 @@ import fs from "fs/promises";
 import path from "path";
 import crypto from "crypto";
 
+type TemplatePreset = {
+  id: string;
+  name: string;
+  colorScheme: {
+    primary: string;
+    secondary: string;
+    heading: string;
+    text: string;
+    muted: string;
+    background: string;
+    divider: string;
+  };
+  structure: {
+    headerStyle: "centered" | "left-aligned" | "boxed";
+    sectionStyle: "bar" | "underline" | "boxed" | "minimal";
+    bulletStyle: "disc" | "square" | "dash" | "arrow";
+    dividerStyle: "line" | "double" | "dashed" | "none";
+    fontFamily: "times" | "helvetica" | "courier";
+    titleSize: number;
+    headingSize: number;
+    bodySize: number;
+  };
+};
+
+const TEMPLATE_PRESETS: Record<string, TemplatePreset> = {
+  tpl_classic_professional: {
+    id: "tpl_classic_professional",
+    name: "Classic Professional",
+    colorScheme: {
+      primary: "#7148FC",
+      secondary: "#9B7EFC",
+      heading: "#1a1a1a",
+      text: "#333333",
+      muted: "#666666",
+      background: "#F5F3FF",
+      divider: "#E5E5E5",
+    },
+    structure: {
+      headerStyle: "centered",
+      sectionStyle: "bar",
+      bulletStyle: "disc",
+      dividerStyle: "line",
+      fontFamily: "times",
+      titleSize: 22,
+      headingSize: 14,
+      bodySize: 11,
+    },
+  },
+  tpl_modern_minimal: {
+    id: "tpl_modern_minimal",
+    name: "Modern Minimal",
+    colorScheme: {
+      primary: "#0D9488",
+      secondary: "#14B8A6",
+      heading: "#0F172A",
+      text: "#334155",
+      muted: "#64748B",
+      background: "#F0FDFA",
+      divider: "#E2E8F0",
+    },
+    structure: {
+      headerStyle: "left-aligned",
+      sectionStyle: "underline",
+      bulletStyle: "dash",
+      dividerStyle: "dashed",
+      fontFamily: "helvetica",
+      titleSize: 20,
+      headingSize: 13,
+      bodySize: 10,
+    },
+  },
+  tpl_bold_academic: {
+    id: "tpl_bold_academic",
+    name: "Bold Academic",
+    colorScheme: {
+      primary: "#2563EB",
+      secondary: "#3B82F6",
+      heading: "#111827",
+      text: "#1F2937",
+      muted: "#6B7280",
+      background: "#EFF6FF",
+      divider: "#D1D5DB",
+    },
+    structure: {
+      headerStyle: "boxed",
+      sectionStyle: "boxed",
+      bulletStyle: "square",
+      dividerStyle: "double",
+      fontFamily: "times",
+      titleSize: 24,
+      headingSize: 14,
+      bodySize: 11,
+    },
+  },
+  tpl_elegant_rust: {
+    id: "tpl_elegant_rust",
+    name: "Elegant Earth",
+    colorScheme: {
+      primary: "#B45309",
+      secondary: "#D97706",
+      heading: "#292524",
+      text: "#44403C",
+      muted: "#78716C",
+      background: "#FFFBEB",
+      divider: "#D6D3D1",
+    },
+    structure: {
+      headerStyle: "centered",
+      sectionStyle: "underline",
+      bulletStyle: "arrow",
+      dividerStyle: "line",
+      fontFamily: "times",
+      titleSize: 22,
+      headingSize: 14,
+      bodySize: 11,
+    },
+  },
+  tpl_vibrant_green: {
+    id: "tpl_vibrant_green",
+    name: "Fresh & Vibrant",
+    colorScheme: {
+      primary: "#16A34A",
+      secondary: "#22C55E",
+      heading: "#14532D",
+      text: "#166534",
+      muted: "#4D7C0F",
+      background: "#F0FDF4",
+      divider: "#BBF7D0",
+    },
+    structure: {
+      headerStyle: "left-aligned",
+      sectionStyle: "bar",
+      bulletStyle: "disc",
+      dividerStyle: "line",
+      fontFamily: "helvetica",
+      titleSize: 20,
+      headingSize: 13,
+      bodySize: 11,
+    },
+  },
+};
+
+function hexToPdfRgb(hex: string) {
+  const cleaned = hex.trim().replace("#", "");
+  const full = cleaned.length === 3
+    ? cleaned.split("").map((c) => c + c).join("")
+    : cleaned;
+  const r = parseInt(full.slice(0, 2), 16) / 255;
+  const g = parseInt(full.slice(2, 4), 16) / 255;
+  const b = parseInt(full.slice(4, 6), 16) / 255;
+  return rgb(r, g, b);
+}
+
 // Ensure uploads directory exists
 const UPLOADS_DIR = process.env.PDF_UPLOADS_DIR || "./uploads/pdfs";
 
@@ -286,9 +439,33 @@ The project PDF is automatically saved to the student's account and costs 1 cred
 
       // Create PDF document
       const pdfDoc = await PDFDocument.create();
-      const timesRoman = await pdfDoc.embedFont(StandardFonts.TimesRoman);
-      const timesRomanBold = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
-      const timesRomanItalic = await pdfDoc.embedFont(StandardFonts.TimesRomanItalic);
+      const selectedTemplate =
+        (templateId && TEMPLATE_PRESETS[templateId]) ? TEMPLATE_PRESETS[templateId] : TEMPLATE_PRESETS.tpl_classic_professional;
+
+      const fontFamily = selectedTemplate.structure.fontFamily;
+      const normalFontName =
+        fontFamily === "helvetica"
+          ? StandardFonts.Helvetica
+          : fontFamily === "courier"
+            ? StandardFonts.Courier
+            : StandardFonts.TimesRoman;
+      const boldFontName =
+        fontFamily === "helvetica"
+          ? StandardFonts.HelveticaBold
+          : fontFamily === "courier"
+            ? StandardFonts.CourierBold
+            : StandardFonts.TimesRomanBold;
+      const italicFontName =
+        fontFamily === "helvetica"
+          ? StandardFonts.HelveticaOblique
+          : fontFamily === "courier"
+            ? StandardFonts.CourierOblique
+            : StandardFonts.TimesRomanItalic;
+
+      // Keep variable names for minimal code changes, but fonts vary by template
+      const timesRoman = await pdfDoc.embedFont(normalFontName);
+      const timesRomanBold = await pdfDoc.embedFont(boldFontName);
+      const timesRomanItalic = await pdfDoc.embedFont(italicFontName);
 
       // Document metadata
       pdfDoc.setTitle(title);
@@ -306,12 +483,26 @@ The project PDF is automatically saved to the student's account and costs 1 cred
       let yPosition = pageHeight - margin;
       let pageNumber = 1;
 
-      // Colors
-      const brandColor = rgb(0.44, 0.29, 0.99); // #7148FC
-      const headingColor = rgb(0.1, 0.1, 0.1);
-      const textColor = rgb(0.2, 0.2, 0.2);
-      const mutedColor = rgb(0.5, 0.5, 0.5);
-      const dividerColor = rgb(0.8, 0.8, 0.8);
+      // Colors (driven by selected template)
+      const brandColor = hexToPdfRgb(selectedTemplate.colorScheme.primary);
+      const headingColor = hexToPdfRgb(selectedTemplate.colorScheme.heading);
+      const textColor = hexToPdfRgb(selectedTemplate.colorScheme.text);
+      const mutedColor = hexToPdfRgb(selectedTemplate.colorScheme.muted);
+      const dividerColor = hexToPdfRgb(selectedTemplate.colorScheme.divider);
+      const sectionBgColor = hexToPdfRgb(selectedTemplate.colorScheme.background);
+
+      const titleSize = selectedTemplate.structure.titleSize;
+      const headingSize = selectedTemplate.structure.headingSize;
+      const bodySize = selectedTemplate.structure.bodySize;
+
+      const bulletChar =
+        selectedTemplate.structure.bulletStyle === "square"
+          ? "▪"
+          : selectedTemplate.structure.bulletStyle === "dash"
+            ? "-"
+            : selectedTemplate.structure.bulletStyle === "arrow"
+              ? "→"
+              : "•";
 
       // Helper: Add page number
       const addPageNumber = () => {
@@ -411,25 +602,60 @@ The project PDF is automatically saved to the student's account and costs 1 cred
       } as const;
 
       const addParagraph = (text: string, indent = 10) => {
-        addText(text, 11, timesRoman, textColor, 1.6, indent);
+        addText(text, bodySize, timesRoman, textColor, 1.6, indent);
         yPosition -= 6;
       };
 
       const addKeyValue = (label: string, value: string | undefined | null) => {
         if (!value) return;
-        addText(`${label}: ${value}`, 11, timesRoman, textColor, 1.6, 10);
+        addText(`${label}: ${value}`, bodySize, timesRoman, textColor, 1.6, 10);
       };
 
       // Helper: Add horizontal divider
       const addDivider = (thickness = 1, color = dividerColor) => {
         yPosition -= 10;
         checkPageBreak(20);
-        page.drawLine({
-          start: { x: margin, y: yPosition },
-          end: { x: pageWidth - margin, y: yPosition },
-          thickness,
-          color,
-        });
+        const style = selectedTemplate.structure.dividerStyle;
+        if (style === "none") {
+          yPosition -= 10;
+          return;
+        }
+
+        if (style === "dashed") {
+          const startX = margin;
+          const endX = pageWidth - margin;
+          const dashLen = 6;
+          const gap = 6;
+          for (let x = startX; x < endX; x += dashLen + gap) {
+            page.drawLine({
+              start: { x, y: yPosition },
+              end: { x: Math.min(x + dashLen, endX), y: yPosition },
+              thickness,
+              color,
+            });
+          }
+        } else if (style === "double") {
+          page.drawLine({
+            start: { x: margin, y: yPosition + 2 },
+            end: { x: pageWidth - margin, y: yPosition + 2 },
+            thickness: Math.max(1, thickness),
+            color,
+          });
+          page.drawLine({
+            start: { x: margin, y: yPosition - 2 },
+            end: { x: pageWidth - margin, y: yPosition - 2 },
+            thickness: Math.max(1, thickness),
+            color,
+          });
+        } else {
+          // line
+          page.drawLine({
+            start: { x: margin, y: yPosition },
+            end: { x: pageWidth - margin, y: yPosition },
+            thickness,
+            color,
+          });
+        }
         yPosition -= 15;
       };
 
@@ -437,33 +663,76 @@ The project PDF is automatically saved to the student's account and costs 1 cred
       const addSectionHeading = (text: string, marks: string) => {
         yPosition -= 20;
         checkPageBreak(80);
-        
-        // Draw background bar
-        page.drawRectangle({
-          x: margin,
-          y: yPosition - 5,
-          width: contentWidth,
-          height: 28,
-          color: rgb(0.95, 0.94, 1), // Light purple
-        });
-        
-        // Section title (marks parameter kept for compatibility but not displayed)
-        page.drawText(text, {
-          x: margin + 10,
-          y: yPosition + 2,
-          size: 14,
-          font: timesRomanBold,
-          color: brandColor,
-        });
-        
-        // Underline
-        yPosition -= 28;
-        page.drawLine({
-          start: { x: margin, y: yPosition + 23 },
-          end: { x: pageWidth - margin, y: yPosition + 23 },
-          thickness: 2,
-          color: brandColor,
-        });
+
+        const style = selectedTemplate.structure.sectionStyle;
+        const headingH = 28;
+
+        if (style === "bar") {
+          page.drawRectangle({
+            x: margin,
+            y: yPosition - 5,
+            width: contentWidth,
+            height: headingH,
+            color: sectionBgColor,
+          });
+          page.drawText(text, {
+            x: margin + 10,
+            y: yPosition + 2,
+            size: headingSize,
+            font: timesRomanBold,
+            color: brandColor,
+          });
+          yPosition -= headingH;
+          page.drawLine({
+            start: { x: margin, y: yPosition + 23 },
+            end: { x: pageWidth - margin, y: yPosition + 23 },
+            thickness: 2,
+            color: brandColor,
+          });
+        } else if (style === "boxed") {
+          page.drawRectangle({
+            x: margin,
+            y: yPosition - 5,
+            width: contentWidth,
+            height: headingH,
+            borderColor: brandColor,
+            borderWidth: 2,
+            color: rgb(1, 1, 1),
+          });
+          page.drawText(text, {
+            x: margin + 10,
+            y: yPosition + 2,
+            size: headingSize,
+            font: timesRomanBold,
+            color: brandColor,
+          });
+          yPosition -= headingH;
+        } else if (style === "underline") {
+          page.drawText(text, {
+            x: margin,
+            y: yPosition + 2,
+            size: headingSize,
+            font: timesRomanBold,
+            color: brandColor,
+          });
+          yPosition -= 18;
+          page.drawLine({
+            start: { x: margin, y: yPosition + 10 },
+            end: { x: pageWidth - margin, y: yPosition + 10 },
+            thickness: 2,
+            color: brandColor,
+          });
+        } else {
+          // minimal
+          page.drawText(text, {
+            x: margin,
+            y: yPosition + 2,
+            size: headingSize,
+            font: timesRomanBold,
+            color: brandColor,
+          });
+          yPosition -= 18;
+        }
         
         yPosition -= 15;
       };
@@ -474,19 +743,20 @@ The project PDF is automatically saved to the student's account and costs 1 cred
         checkPageBreak(50);
         
         // Subsection (marks parameter kept for compatibility but not displayed)
-        addText(`${label}`, 11, timesRomanBold, headingColor, 1.3);
+        const subSize = Math.max(bodySize + 1, headingSize - 2);
+        addText(`${label}`, subSize, timesRomanBold, headingColor, 1.3);
         
         yPosition -= 5;
       };
 
       // Helper: Add bullet point
       const addBullet = (text: string, indent = 15) => {
-        addText(`•  ${text}`, 11, timesRoman, textColor, 1.4, indent);
+        addText(`${bulletChar}  ${text}`, bodySize, timesRoman, textColor, 1.4, indent);
       };
 
       // Helper: Add numbered item
       const addNumbered = (num: number, text: string, indent = 15) => {
-        addText(`${num}.  ${text}`, 11, timesRoman, textColor, 1.4, indent);
+        addText(`${num}.  ${text}`, bodySize, timesRoman, textColor, 1.4, indent);
       };
 
       // ===== TITLE PAGE =====
@@ -516,14 +786,14 @@ The project PDF is automatically saved to the student's account and costs 1 cred
       yPosition -= 40;
       
       // Student details
-      addText(`Candidate Name: ${author}`, 12, timesRoman, textColor, 2);
+      addText(`Candidate Name: ${author}`, Math.max(bodySize + 1, 12), timesRoman, textColor, 2);
       if (candidateNumber) {
-        addText(`Candidate Number: ${candidateNumber}`, 12, timesRoman, textColor, 2);
+        addText(`Candidate Number: ${candidateNumber}`, Math.max(bodySize + 1, 12), timesRoman, textColor, 2);
       }
-      addText(`Learning Area: ${subject}`, 12, timesRoman, textColor, 2);
-      addText(`Level: ${level}`, 12, timesRoman, textColor, 2);
+      addText(`Learning Area: ${subject}`, Math.max(bodySize + 1, 12), timesRoman, textColor, 2);
+      addText(`Level: ${level}`, Math.max(bodySize + 1, 12), timesRoman, textColor, 2);
       if (formGrade) {
-        addText(`Form/Grade: ${formGrade}`, 12, timesRoman, textColor, 2);
+        addText(`Form/Grade: ${formGrade}`, Math.max(bodySize + 1, 12), timesRoman, textColor, 2);
       }
       
       yPosition -= 40;
@@ -537,9 +807,9 @@ The project PDF is automatically saved to the student's account and costs 1 cred
       });
       yPosition -= 30;
       
-      addText("PROJECT TITLE:", 12, timesRomanBold, mutedColor, 1.5);
+      addText("PROJECT TITLE:", Math.max(bodySize + 1, 12), timesRomanBold, mutedColor, 1.5);
       yPosition -= 10;
-      addText(title, 18, timesRomanBold, brandColor, 1.6);
+      addText(title, titleSize, timesRomanBold, brandColor, 1.6);
       
       yPosition -= 30;
       page.drawLine({
@@ -579,12 +849,12 @@ The project PDF is automatically saved to the student's account and costs 1 cred
       addDivider();
 
       addSectionHeading("TABLE OF CONTENTS", "");
-      addText("Front Matter", 11, timesRomanBold, headingColor, 1.4, 10);
+      addText("Front Matter", Math.max(bodySize + 1, 11), timesRomanBold, headingColor, 1.4, 10);
       addBullet("Declaration", 20);
       addBullet("Acknowledgements", 20);
       addBullet("Table of Contents", 20);
       yPosition -= 8;
-      addText("Main Report", 11, timesRomanBold, headingColor, 1.4, 10);
+      addText("Main Report", Math.max(bodySize + 1, 11), timesRomanBold, headingColor, 1.4, 10);
       addBullet("Stage 1: Problem Identification", 20);
       addBullet("Stage 2: Investigation of Related Ideas", 20);
       addBullet("Stage 3: Generation of Possible Solutions", 20);
@@ -600,11 +870,11 @@ The project PDF is automatically saved to the student's account and costs 1 cred
       addSectionHeading("STAGE 1: PROBLEM IDENTIFICATION", "[5 marks]");
       
       addSubsection("1.1 Description of Problem/Innovation/Identified Gap", "[1 mark]");
-      addText(stage1.problemDescription, 11, timesRoman, textColor, 1.5, 10);
+      addText(stage1.problemDescription, bodySize, timesRoman, textColor, 1.5, 10);
       yPosition -= 10;
       
       addSubsection("1.2 Statement of Intent", "[2 marks]");
-      addText(stage1.statementOfIntent, 11, timesRoman, textColor, 1.5, 10);
+      addText(stage1.statementOfIntent, bodySize, timesRoman, textColor, 1.5, 10);
       yPosition -= 10;
       
       addSubsection("1.3 Design/Project Specifications", "[2 marks]");
@@ -653,7 +923,7 @@ The project PDF is automatically saved to the student's account and costs 1 cred
       for (let i = 0; i < stage2.relatedIdeas.length; i++) {
         const idea = stage2.relatedIdeas[i]!;
         addSubsection(`2.${i + 1} Related Idea ${i + 1}: ${idea.title}`, "[1 mark]");
-        addText(idea.description, 11, timesRoman, textColor, 1.5, 10);
+        addText(idea.description, bodySize, timesRoman, textColor, 1.5, 10);
         yPosition -= 8;
         
         addText("Merits/Advantages:", 10, timesRomanBold, headingColor, 1.3, 10);
@@ -687,7 +957,7 @@ The project PDF is automatically saved to the student's account and costs 1 cred
       for (let i = 0; i < stage3.possibleSolutions.length; i++) {
         const solution = stage3.possibleSolutions[i]!;
         addSubsection(`3.${i + 1} Possible Solution ${i + 1}: ${solution.title}`, "[1 mark]");
-        addText(solution.description, 11, timesRoman, textColor, 1.5, 10);
+        addText(solution.description, bodySize, timesRoman, textColor, 1.5, 10);
         yPosition -= 8;
         
         addText("Merits/Advantages:", 10, timesRomanBold, headingColor, 1.3, 10);
@@ -709,7 +979,7 @@ The project PDF is automatically saved to the student's account and costs 1 cred
       }
 
       addSubsection("3.4 Selection Criteria (How the Best Idea Will Be Chosen)", "");
-      addText("I will choose the best solution using the following criteria:", 11, timesRoman, textColor, 1.5, 10);
+      addText("I will choose the best solution using the following criteria:", bodySize, timesRoman, textColor, 1.5, 10);
       addBullet("Effectiveness in solving the stated problem", 20);
       addBullet("Affordability and availability of resources locally", 20);
       addBullet("Ease of use and maintainability", 20);
@@ -721,7 +991,7 @@ The project PDF is automatically saved to the student's account and costs 1 cred
       addSectionHeading("STAGE 4: DEVELOPMENT/REFINEMENT OF CHOSEN IDEA", "[10 marks]");
       
       addSubsection("4.1 Chosen Solution", "[1 mark]");
-      addText(stage4.chosenSolution, 11, timesRoman, textColor, 1.5, 10);
+      addText(stage4.chosenSolution, bodySize, timesRoman, textColor, 1.5, 10);
       yPosition -= 10;
       
       addSubsection("4.2 Justification of Choice", "[2 marks]");
@@ -734,8 +1004,8 @@ The project PDF is automatically saved to the student's account and costs 1 cred
       for (let i = 0; i < stage4.refinements.length; i++) {
         const ref = stage4.refinements[i]!;
         yPosition -= 5;
-        addText(`${i + 1}. ${ref.title}`, 11, timesRomanBold, headingColor, 1.4, 10);
-        addText(ref.description, 11, timesRoman, textColor, 1.5, 20);
+        addText(`${i + 1}. ${ref.title}`, Math.max(bodySize + 1, 11), timesRomanBold, headingColor, 1.4, 10);
+        addText(ref.description, bodySize, timesRoman, textColor, 1.5, 20);
         yPosition -= 8;
       }
 
@@ -758,7 +1028,7 @@ The project PDF is automatically saved to the student's account and costs 1 cred
       const presentationLabel = stage5.presentationType === "artifact" ? "Artifact" :
                                 stage5.presentationType === "service" ? "Service" : "Product";
       addSubsection(`5.1 Presentation Type: ${presentationLabel}`, "[10 marks]");
-      addText(stage5.description, 11, timesRoman, textColor, 1.5, 10);
+      addText(stage5.description, bodySize, timesRoman, textColor, 1.5, 10);
       yPosition -= 10;
       
       addText("Key Features:", 10, timesRomanBold, headingColor, 1.3, 10);
@@ -768,7 +1038,7 @@ The project PDF is automatically saved to the student's account and costs 1 cred
       yPosition -= 10;
       
       addText("Implementation:", 10, timesRomanBold, headingColor, 1.3, 10);
-      addText(stage5.implementation, 11, timesRoman, textColor, 1.5, 10);
+      addText(stage5.implementation, bodySize, timesRoman, textColor, 1.5, 10);
 
       // Expanded Stage 5 content to push to 15+ pages (meaningful project-report sections)
       addSubsection("5.2 Materials/Tools and Requirements", "");
@@ -855,7 +1125,7 @@ The project PDF is automatically saved to the student's account and costs 1 cred
       addSectionHeading("STAGE 6: EVALUATION AND RECOMMENDATIONS", "[5 marks]");
       
       addSubsection("6.1 Relevance to Statement of Intent", "[2 marks]");
-      addText(stage6.relevanceToIntent, 11, timesRoman, textColor, 1.5, 10);
+      addText(stage6.relevanceToIntent, bodySize, timesRoman, textColor, 1.5, 10);
       yPosition -= 10;
       
       addSubsection("6.2 Challenges Encountered", "[1 mark]");
@@ -940,7 +1210,7 @@ The project PDF is automatically saved to the student's account and costs 1 cred
       ] as const;
       for (const [risk, mitigation] of risks) {
         addText(`Risk: ${risk}`, 10, timesRomanBold, headingColor, 1.3, 10);
-        addText(`Mitigation: ${mitigation}`, 11, timesRoman, textColor, 1.5, 20);
+        addText(`Mitigation: ${mitigation}`, bodySize, timesRoman, textColor, 1.5, 20);
         yPosition -= 6;
       }
 
@@ -969,7 +1239,7 @@ The project PDF is automatically saved to the student's account and costs 1 cred
           ];
       for (const [term, meaning] of glossary) {
         addText(`${term}:`, 10, timesRomanBold, headingColor, 1.3, 10);
-        addText(meaning, 11, timesRoman, textColor, 1.5, 20);
+        addText(meaning, bodySize, timesRoman, textColor, 1.5, 20);
         yPosition -= 4;
       }
 

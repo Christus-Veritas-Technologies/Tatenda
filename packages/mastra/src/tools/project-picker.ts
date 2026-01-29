@@ -39,10 +39,10 @@ export const pickProjectTool = createTool({
     })),
     message: z.string(),
   }),
-  execute: async ({ context }) => {
+  execute: async (input) => {
     // Note: Actual database call happens in the API route
     // This tool just signals the intent and validates the request
-    const { userId, subject, limit } = context;
+    const { userId, subject, limit } = input;
     
     return {
       success: true,
@@ -70,10 +70,10 @@ export const showTemplatesTool = createTool({
     success: z.boolean(),
     message: z.string(),
   }),
-  execute: async ({ context }) => {
+  execute: async (input) => {
     return {
       success: true,
-      message: context.message || "Please select a template style for your project",
+      message: input.message || "Please select a template style for your project",
     };
   },
 });

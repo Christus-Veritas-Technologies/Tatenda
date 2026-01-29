@@ -108,10 +108,10 @@ export const editProjectTool = createTool({
     changedSections: z.array(z.string()).describe("List of sections that were modified"),
   }),
   
-  execute: async ({ context }) => {
+  execute: async (input) => {
     // Note: Actual editing logic happens in the API route
     // This tool validates the request and signals intent
-    const { projectId, userId, editReason, ...updates } = context;
+    const { projectId, userId, editReason, ...updates } = input;
     
     // Determine which sections have changes
     const changedSections: string[] = [];
@@ -171,8 +171,8 @@ export const regenerateProjectTool = createTool({
     message: z.string(),
   }),
   
-  execute: async ({ context }) => {
-    const { projectId, templateId } = context;
+  execute: async (input) => {
+    const { projectId, templateId } = input;
     
     return {
       success: true,

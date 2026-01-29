@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { ChatHistorySidebar } from "@/components/chat-history-sidebar";
+import { InlineTemplateSelector, type TemplateOption } from "@/components/template-selector";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { 
   ArrowRight01Icon,
@@ -27,6 +28,7 @@ import {
   Notebook01Icon,
 } from "@hugeicons/core-free-icons";
 import { nanoid } from "nanoid";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Generate unique message ID
 const generateMessageId = () => `msg-${nanoid(12)}`;
@@ -39,6 +41,8 @@ type MessageType =
   | "normal-with-pdf"     // Message with PDF attachment
   | "project"             // Project attachment only
   | "normal-with-project" // Message with project attachment
+  | "templates"           // Template picker only
+  | "normal-with-templates" // Message with template picker
   | "loading";            // Loading state
 
 type PDFAttachment = {
@@ -63,6 +67,7 @@ type Message = {
   type: MessageType;
   pdf?: PDFAttachment;
   project?: ProjectAttachment;
+  templates?: TemplateOption[];
 };
 
 // Helper function to format file size
@@ -76,7 +81,7 @@ function formatFileSize(bytes: number): string {
 
 // API response type
 interface ChatResponse {
-  messageType: "normal" | "pdf" | "normal-with-pdf" | "project" | "normal-with-project";
+  messageType: "normal" | "pdf" | "normal-with-pdf" | "project" | "normal-with-project" | "templates" | "normal-with-templates";
   text: string | null;
   pdf: {
     url: string;
@@ -91,6 +96,7 @@ interface ChatResponse {
     title: string;
     subject: string;
   } | null;
+  templates: TemplateOption[] | null;
 }
 
 export default function SpeakPage() {
@@ -209,6 +215,7 @@ export default function SpeakPage() {
                   title: data.project.title,
                   subject: data.project.subject,
                 } : undefined,
+                templates: data.templates || undefined,
               }
             : msg
         )
@@ -295,6 +302,27 @@ export default function SpeakPage() {
   const handleQuickAction = (text: string) => {
     setMessage((prev) => (prev ? prev + " " + text : text));
   };
+
+  // Handle template selection - immediately sends message to Tatenda
+  const handleTemplateSelect = useCallback((template: TemplateOption) => {
+    if (isLoading) return;
+    
+    const selectionMessage = `I want the "${template.name}" template`;
+    
+    // Add user message to chat
+    setMessages((prev) => [
+      ...prev, 
+      { 
+        id: generateMessageId(),
+        role: "user" as const, 
+        content: selectionMessage,
+        type: "normal" as MessageType,
+      }
+    ]);
+    
+    // Send to API
+    chatMutation.mutate(selectionMessage);
+  }, [isLoading, chatMutation]);
 
   const handleThreadSelect = (threadId: string) => {
     setCurrentThreadId(threadId);
@@ -452,6 +480,31 @@ export default function SpeakPage() {
                             </Card>
                           )}
                           {msg.project && <ProjectCard project={msg.project} />}
+                        </div>
+                      );
+
+                    case "templates":
+                      return msg.templates ? (
+                        <InlineTemplateSelector 
+                          templates={msg.templates} 
+                          onSelect={handleTemplateSelect}
+                        />
+                      ) : null;
+
+                    case "normal-with-templates":
+                      return (
+                        <div className="space-y-3">
+                          {msg.content && (
+                            <Card className="p-4 bg-muted rounded-2xl rounded-tl-sm">
+                              <MarkdownRenderer content={msg.content} />
+                            </Card>
+                          )}
+                          {msg.templates && (
+                            <InlineTemplateSelector 
+                              templates={msg.templates} 
+                              onSelect={handleTemplateSelect}
+                            />
+                          )}
                         </div>
                       );
 

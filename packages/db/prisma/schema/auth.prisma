@@ -23,6 +23,7 @@ model User {
   notifications Notification[]
   purchases     Purchase[]
   intermittentPayments IntermittentPayment[]
+  templates     Template[]
 
   @@unique([email])
   @@map("user")
@@ -88,6 +89,7 @@ model Project {
   fileName    String?   // Generated PDF filename
   downloadUrl String?   // Download URL for the PDF
   fileSize    Int?      // File size in bytes
+  templateId  String?   // Which template was used
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
@@ -95,6 +97,7 @@ model Project {
 
   @@index([userId])
   @@index([subject])
+  @@index([templateId])
   @@map("project")
 }
 
@@ -142,4 +145,32 @@ model IntermittentPayment {
   @@index([userId])
   @@index([purchaseId])
   @@map("intermittent_payment")
+}
+
+model Template {
+  id           String   @id @default(cuid())
+  name         String   // e.g., "Classic Professional", "Modern Minimal"
+  description  String?  // Brief description of the template style
+  previewImage String?  // URL to preview thumbnail
+  
+  // Template styling configuration (stored as JSON)
+  colorScheme  String   // JSON: { primary, secondary, accent, headingColor, textColor }
+  structure    String   // JSON: { headerStyle, sectionStyle, bulletStyle, dividerStyle }
+  
+  // Template metadata
+  isDefault    Boolean  @default(false)  // System default templates
+  isPublic     Boolean  @default(true)   // Visible to all users
+  usageCount   Int      @default(0)      // How many times used
+  
+  // If userId is null, it's a system template
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isDefault])
+  @@index([isPublic])
+  @@map("template")
 }

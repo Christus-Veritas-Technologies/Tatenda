@@ -10,6 +10,7 @@ import {
   Robot02Icon,
   Search01Icon,
   CoinsIcon,
+  PaintBoardIcon,
 } from "@hugeicons/core-free-icons";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -42,6 +43,11 @@ const menuItems = [
     title: "Projects",
     url: "/dashboard/projects" as const,
     icon: FileScriptIcon,
+  },
+  {
+    title: "Templates",
+    url: "/dashboard/templates" as const,
+    icon: PaintBoardIcon,
   },
   {
     title: "Billing",

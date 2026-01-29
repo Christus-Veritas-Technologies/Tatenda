@@ -258,8 +258,24 @@ The project PDF is automatically saved to the student's account and costs 1 cred
 
       const {
         title, subject, author, candidateNumber, school, formGrade, level,
+        languageComplexity,
+        templateId,
         stage1, stage2, stage3, stage4, stage5, stage6
       } = input;
+
+      // Hard-block Shona projects for now
+      if (typeof subject === "string" && subject.trim().toLowerCase() === "shona") {
+        return {
+          success: false,
+          projectId: "",
+          fileName: "",
+          filePath: "",
+          fileSize: 0,
+          downloadUrl: "",
+          createdAt: new Date().toISOString(),
+          message: "Sorry — I can't help with Shona projects yet.",
+        };
+      }
 
       // Create PDF document
       const pdfDoc = await PDFDocument.create();

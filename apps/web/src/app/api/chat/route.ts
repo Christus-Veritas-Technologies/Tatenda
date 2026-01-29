@@ -127,6 +127,47 @@ export async function POST(request: Request) {
           console.log("[Chat] Templates requested");
         }
         
+        // Check for Project editing
+        if ((toolName === 'editProject' || toolName === 'edit-project') && result?.success) {
+          console.log("[Chat] Project edit requested");
+          
+          try {
+            // Deduct 1 credit for editing
+            await prisma.user.update({
+              where: { id: session.user.id },
+              data: { credits: { decrement: 1 } },
+            });
+            console.log("[Chat] Credit deducted for project editing");
+          } catch (dbError) {
+            console.error("[Chat] Failed to deduct credit for editing:", dbError);
+          }
+        }
+        
+        // Check for Project regeneration with new template
+        if ((toolName === 'regenerateProject' || toolName === 'regenerate-project') && result?.success) {
+          console.log("[Chat] Project regeneration requested");
+          
+          try {
+            // Deduct 1 credit for regeneration
+            await prisma.user.update({
+              where: { id: session.user.id },
+              data: { credits: { decrement: 1 } },
+            });
+            console.log("[Chat] Credit deducted for project regeneration");
+            
+            // Increment template usage if one was specified
+            const templateId = item.payload?.args?.templateId;
+            if (templateId) {
+              await prisma.template.update({
+                where: { id: templateId },
+                data: { usageCount: { increment: 1 } },
+              }).catch(() => {});
+            }
+          } catch (dbError) {
+            console.error("[Chat] Failed to process regeneration:", dbError);
+          }
+        }
+        
         // Check for Project generation
         if ((toolName === 'generateProject' || toolName === 'generate-project') && result?.success) {
           projectResult = result;

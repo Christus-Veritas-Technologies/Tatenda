@@ -231,8 +231,12 @@ The project PDF is automatically saved to the student's account and costs 1 cred
     author: z.string().describe("Student's name"),
     candidateNumber: z.string().optional().describe("Candidate/exam number if available"),
     school: z.string().optional().describe("School name"),
-    formGrade: z.string().optional().describe("Form or Grade (e.g., Form 4, Lower 6)"),
+    formGrade: z.string().optional().describe("Form or Grade (e.g., Form 4, Lower 6, Grade 7)"),
     level: z.enum(["O-Level", "A-Level"]).describe("Academic level"),
+    languageComplexity: z.enum(["basic", "intermediate", "advanced"]).optional().default("intermediate").describe(
+      "Language complexity level: basic (simple vocabulary), intermediate (moderate), advanced (complex/technical)"
+    ),
+    templateId: z.string().optional().describe("Template ID to use for styling"),
     userId: z.string().describe("The user ID for database storage"),
     ...ProjectStageSchema.shape,
   }),

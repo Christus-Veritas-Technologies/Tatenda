@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { ChatHistorySidebar } from "@/components/chat-history-sidebar";
@@ -592,19 +593,29 @@ export default function SpeakPage() {
             ) : (
               // Normal input UI
               <div className="relative">
-                <Input
+                <Textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleKeyPress}
                   placeholder="Type your message..."
-                  className="pr-12 h-12 rounded-full border-2 focus-visible:ring-brand"
+                  className="pr-14 py-3 min-h-[50px] max-h-[200px] resize-none rounded-2xl border-2 focus-visible:ring-brand"
                   disabled={isLoading}
+                  rows={1}
+                  style={{
+                    height: 'auto',
+                    overflowY: message.split('\n').length > 3 ? 'auto' : 'hidden'
+                  }}
+                  onInput={(e) => {
+                    const target = e.target as HTMLTextAreaElement;
+                    target.style.height = 'auto';
+                    target.style.height = Math.min(target.scrollHeight, 200) + 'px';
+                  }}
                 />
                 <Button
                   size="icon"
                   onClick={handleSendMessage}
                   disabled={!message.trim() || isLoading}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full w-10 h-10 bg-brand hover:bg-brand/90 disabled:opacity-50"
+                  className="absolute right-2 bottom-2 rounded-full w-10 h-10 bg-brand hover:bg-brand/90 disabled:opacity-50"
                 >
                   <HugeiconsIcon icon={ArrowRight01Icon} size={20} />
                 </Button>

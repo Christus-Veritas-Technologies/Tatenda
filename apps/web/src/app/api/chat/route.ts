@@ -2,9 +2,24 @@ import { headers } from "next/headers";
 import { authClient } from "@/lib/auth-client";
 import { tatendaFreeAgent } from "@tatenda/mastra";
 import prisma from "@tatenda/db";
+import { DEFAULT_TEMPLATES } from "@tatenda/db/templates";
 
 // Structured response types
-export type MessageType = "normal" | "pdf" | "normal-with-pdf" | "project" | "normal-with-project";
+export type MessageType = 
+  | "normal" 
+  | "pdf" 
+  | "normal-with-pdf" 
+  | "project" 
+  | "normal-with-project"
+  | "templates"           // Show template picker
+  | "normal-with-templates"; // Text + template picker
+
+export interface TemplateOption {
+  id: string;
+  name: string;
+  description: string | null;
+  previewColor: string;
+}
 
 export interface ChatResponse {
   messageType: MessageType;
@@ -22,6 +37,7 @@ export interface ChatResponse {
     title: string;
     subject: string;
   } | null;
+  templates: TemplateOption[] | null; // For template selection
 }
 
 export async function POST(request: Request) {
@@ -89,6 +105,7 @@ export async function POST(request: Request) {
     // Check for tool results
     let pdfResult: any = null;
     let projectResult: any = null;
+    let showTemplates = false;
     const toolResults = (response as any).toolResults;
     
     if (toolResults && Array.isArray(toolResults)) {
@@ -102,6 +119,12 @@ export async function POST(request: Request) {
         if ((toolName === 'generatePDF' || toolName === 'generate-pdf') && result?.success) {
           pdfResult = result;
           console.log("[Chat] PDF generated:", pdfResult);
+        }
+        
+        // Check for template selection trigger
+        if ((toolName === 'showTemplates' || toolName === 'show-templates') && result?.success) {
+          showTemplates = true;
+          console.log("[Chat] Templates requested");
         }
         
         // Check for Project generation
@@ -126,6 +149,7 @@ export async function POST(request: Request) {
                 fileName: projectResult.fileName,
                 downloadUrl: projectResult.downloadUrl,
                 fileSize: projectResult.fileSize,
+                templateId: projectArgs?.templateId || null,
                 content: JSON.stringify({
                   createdAt: projectResult.createdAt,
                   stages: {
@@ -148,11 +172,26 @@ export async function POST(request: Request) {
               data: { credits: { decrement: 1 } },
             });
             console.log("[Chat] Credit deducted for project generation");
+            
+            // Increment template usage if one was used
+            if (projectArgs?.templateId) {
+              await prisma.template.update({
+                where: { id: projectArgs.templateId },
+                data: { usageCount: { increment: 1 } },
+              }).catch(() => {}); // Ignore if template doesn't exist
+            }
           } catch (dbError) {
             console.error("[Chat] Failed to save project to DB:", dbError);
           }
         }
       }
+    }
+    
+    // Check if AI response mentions picking a template (heuristic detection)
+    const responseText = response.text?.toLowerCase() || '';
+    const templateKeywords = ['pick a template', 'choose a template', 'select a template', 'which template'];
+    if (templateKeywords.some(keyword => responseText.includes(keyword))) {
+      showTemplates = true;
     }
 
     // Format file size helper
@@ -164,14 +203,25 @@ export async function POST(request: Request) {
       return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
     };
 
+    // Get templates if needed
+    let templates: TemplateOption[] | null = null;
+    if (showTemplates) {
+      templates = DEFAULT_TEMPLATES.map(t => ({
+        id: t.id,
+        name: t.name,
+        description: t.description,
+        previewColor: t.previewColor,
+      }));
+    }
+
     // Determine message type
     let messageType: MessageType = "normal";
-    if (projectResult && pdfResult) {
-      messageType = response.text ? "normal-with-project" : "project";
-    } else if (projectResult) {
+    if (projectResult) {
       messageType = response.text ? "normal-with-project" : "project";
     } else if (pdfResult) {
       messageType = response.text ? "normal-with-pdf" : "pdf";
+    } else if (showTemplates) {
+      messageType = response.text ? "normal-with-templates" : "templates";
     }
 
     // Build structured response
@@ -191,6 +241,7 @@ export async function POST(request: Request) {
         title: (toolResults?.find((t: any) => t.payload?.toolName === 'generateProject')?.payload?.args?.title) || "Project",
         subject: (toolResults?.find((t: any) => t.payload?.toolName === 'generateProject')?.payload?.args?.subject) || "General",
       } : null,
+      templates,
     };
 
     console.log("[Chat] Sending response:", {
@@ -198,6 +249,7 @@ export async function POST(request: Request) {
       hasText: !!chatResponse.text,
       hasPdf: !!chatResponse.pdf,
       hasProject: !!chatResponse.project,
+      hasTemplates: !!chatResponse.templates,
     });
 
     return Response.json(chatResponse);
@@ -215,6 +267,7 @@ export async function POST(request: Request) {
       text: "We couldn't process your message. Please try again.",
       pdf: null,
       project: null,
+      templates: null,
     };
 
     return Response.json(errorResponse, { status: 500 });

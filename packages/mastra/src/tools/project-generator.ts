@@ -383,22 +383,13 @@ The project PDF is automatically saved to the student's account and costs 1 cred
           color: rgb(0.95, 0.94, 1), // Light purple
         });
         
-        // Section title
+        // Section title (marks parameter kept for compatibility but not displayed)
         page.drawText(text, {
           x: margin + 10,
           y: yPosition + 2,
           size: 14,
           font: timesRomanBold,
           color: brandColor,
-        });
-        
-        // Marks indicator
-        page.drawText(marks, {
-          x: pageWidth - margin - timesRomanItalic.widthOfTextAtSize(marks, 10) - 10,
-          y: yPosition + 4,
-          size: 10,
-          font: timesRomanItalic,
-          color: mutedColor,
         });
         
         // Underline
@@ -418,18 +409,8 @@ The project PDF is automatically saved to the student's account and costs 1 cred
         yPosition -= 12;
         checkPageBreak(50);
         
-        // Subsection with underline
-        const labelWidth = timesRomanBold.widthOfTextAtSize(label, 11);
+        // Subsection (marks parameter kept for compatibility but not displayed)
         addText(`${label}`, 11, timesRomanBold, headingColor, 1.3);
-        
-        // Add marks in italics
-        page.drawText(marks, {
-          x: margin + labelWidth + 10,
-          y: yPosition + 11 * 1.3,
-          size: 9,
-          font: timesRomanItalic,
-          color: mutedColor,
-        });
         
         yPosition -= 5;
       };
